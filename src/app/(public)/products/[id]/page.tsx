@@ -114,19 +114,16 @@ async function ProductDetails({ id }: { id: string }) {
                         )}
                     </div>
                     <div className="space-y-3 mb-6">
-                        <p><span className="font-medium text-gray-700">Category:</span> {product.category.replace('_', ' ')}</p>
-                        <p><span className="font-medium text-gray-700">Availability:</span> 
+                        <p><span className="font-medium text-black">Category:</span> <span className="font-medium text-gray-500">{product.category.replace('_', ' ')}</span></p>
+                        <p><span className="font-medium text-black">Availability:</span> 
                             <span className={`ml-2 ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
                                 {product.availability ? 'In Stock' : 'Out of Stock'}
                             </span>
                         </p>
-                        {product.stock > 0 && (
-                            <p><span className="font-medium text-gray-700">Stock:</span> {product.stock} units</p>
-                        )}
                     </div>
                     <div className="mb-6">
-                        <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-                        <p className="text-gray-600 whitespace-pre-line">{product.description}</p>
+                        <h3 className="font-medium text-black mb-2">Description</h3>
+                        <p className="text-gray-500 whitespace-pre-line">{product.description}</p>
                     </div>
                     <AddToCartButton product={product} />
                 </div>
