@@ -204,21 +204,19 @@ export default function AdminProductsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[1200px]">
-          <thead className="bg-gray-50 border-b">
+        <table className="w-full min-w-[950px]">
+          <thead className="bg-gray-100 border-b">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Image</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">SKU</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Generic</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Brand</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">MRP</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Sell Price</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Availability</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Image</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Name</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">SKU</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Brand</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">MRP</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Sell</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -234,7 +232,7 @@ export default function AdminProductsPage() {
                   layout
                   className="hover:bg-gray-50"
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden">
                       <Image
                         src={product.image}
@@ -244,16 +242,14 @@ export default function AdminProductsPage() {
                       />
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.sku}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.category.replace('_', ' ')}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.generic?.name || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.brand?.name || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">৳{product.mrp}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">৳{product.sellPrice}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.stock}</td>
+                  <td className="px-2 py-2 text-sm font-medium text-gray-900">{product.name}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">{product.sku}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">{product.brand?.name || '-'}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">৳{product.mrp}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">৳{product.sellPrice}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">{product.stock}</td>
                   {/* Status Toggle */}
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
                     <button
                       onClick={() =>
                         setConfirmToggle({
@@ -274,7 +270,7 @@ export default function AdminProductsPage() {
                     </button>
                   </td>
                   {/* Availability Toggle */}
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
                     <button
                       onClick={() =>
                         setConfirmToggle({
@@ -294,7 +290,7 @@ export default function AdminProductsPage() {
                       />
                     </button>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
                     <div className="flex space-x-3">
                       <button
                         onClick={() => handleEdit(product)}

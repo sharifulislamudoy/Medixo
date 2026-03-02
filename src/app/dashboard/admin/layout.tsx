@@ -13,8 +13,11 @@ export default function AdminLayout({
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard/admin" },
-    { name: "Users", href: "/dashboard/admin/users" },
+    { name: "Promotion", href: "/dashboard/admin/promotion-modal" },
     { name: "Advertisement", href: "/dashboard/admin/advertisements" },
+    { name: "Users", href: "/dashboard/admin/users" },
+    { name: "Products", href: "/dashboard/admin/products" },
+    
   ];
 
   return (
@@ -25,7 +28,7 @@ export default function AdminLayout({
       {/* Responsive container: column on mobile, row on md+ */}
       <div className="flex flex-col md:flex-row">
         {/* Sidebar - full width on mobile, 1/4 on desktop */}
-        <aside className="w-full md:w-1/4 bg-white shadow-lg md:min-h-screen p-4 md:p-6">
+        <aside className="w-full md:w-1/6 bg-white shadow-lg md:min-h-screen p-4 md:p-6">
           <div className="mb-6 md:mb-8">
             <Link href={'/'}>
               <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-[#156A98] to-[#0F9D8F] bg-clip-text text-transparent">
@@ -61,7 +64,7 @@ export default function AdminLayout({
         </aside>
 
         {/* Main content - full width on mobile, 3/4 on desktop */}
-        <main className="w-full md:w-3/4 p-4 md:p-8">
+        <main className="w-full md:w-5/6 p-4 md:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
