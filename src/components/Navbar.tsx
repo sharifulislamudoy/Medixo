@@ -1,16 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+// Simple product type for search results
+interface SearchProduct {
+  id: string;
+  name: string;
+  brand?: { name: string } | null;
+}
 
 export default function Navbar() {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+  // Fixed: useRef initialized with null and proper type
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 🔐 Get the current session (user login info)
   const { data: session, status } = useSession();
@@ -24,6 +44,100 @@ export default function Navbar() {
 
   const dashboardRoute =
     roleRouteMap[session?.user?.role as string] || "/dashboard";
+
+  // Fetch all products once on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        // Store minimal data needed for search
+        setAllProducts(
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch products for search", error);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Debounced search filter
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchDropdown(true);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      const filtered = allProducts
+        .filter(
+          (product) =>
+            product.name.toLowerCase().includes(query) ||
+            (product.brand?.name &&
+              product.brand.name.toLowerCase().includes(query))
+        )
+        .slice(0, 5); // limit to 5 results
+
+      setSearchResults(filtered);
+      setIsSearching(false);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, allProducts]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowSearchDropdown(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearchFocus = () => {
+    if (searchQuery.trim() !== "") {
+      setShowSearchDropdown(true);
+    }
+  };
+
+  const handleResultClick = (productId: string) => {
+    setShowSearchDropdown(false);
+    setSearchQuery("");
+    router.push(`/products/${productId}`);
+  };
 
   // Close mobile menu on window resize above md breakpoint
   useEffect(() => {
@@ -58,10 +172,10 @@ export default function Navbar() {
 
   // Navigation items for logged-in users (used in desktop dropdown and mobile bottom nav)
   const loggedInNavItems = [
-    { name: "Favourite", href: "/favourite", icon: "❤️" }, // Using emoji for simplicity, replace with actual SVGs
+    { name: "Products", href: "/products", icon: "💊" },
     { name: "Bag", href: "/bag", icon: "🛒" },
+    { name: "Favourite", href: "/favourite", icon: "❤️" },
     { name: "History", href: "/history", icon: "📜" },
-    { name: "Alert", href: "/alert", icon: "🔔" },
   ];
 
   return (
@@ -70,11 +184,10 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          isScrolled
+        className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
             ? "bg-white/95 backdrop-blur-md shadow-lg"
             : "bg-white shadow-sm"
-        }`}
+          }`}
       >
         {/* Decorative top border gradient */}
         <div className="h-1 w-full bg-gradient-to-r from-[#156A98] via-[#0F9D8F] to-[#156A98]" />
@@ -167,10 +280,13 @@ export default function Navbar() {
               </div>
 
               {/* Search Bar for md+ */}
-              <div className="relative max-w-xs w-full">
+              <div className="relative max-w-xs w-full" ref={searchRef}>
                 <input
                   type="text"
                   placeholder="Search medicines..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
                   className="w-full text-black border border-gray-200 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-[#0F9D8F]/50 focus:border-[#0F9D8F] transition-all duration-300"
                 />
                 <svg
@@ -323,10 +439,14 @@ export default function Navbar() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="relative w-full"
+              ref={searchRef} // reuse same ref to capture clicks for dropdown
             >
               <input
                 type="text"
                 placeholder="Search medicines..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
                 className="w-full text-black border border-gray-200 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-[#0F9D8F]/50 focus:border-[#0F9D8F] transition-all duration-300 group-hover:shadow-md"
               />
               <svg
@@ -346,6 +466,46 @@ export default function Navbar() {
             </motion.div>
           </div>
         </div>
+
+        {/* Search Results Dropdown (global, appears below navbar) */}
+        <AnimatePresence>
+          {showSearchDropdown && (searchResults.length > 0 || isSearching) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute max-w-3xl mx-auto top-full left-0 right-0 bg-white shadow-xl border-t border-gray-100 max-h-96 overflow-y-auto z-50"
+            >
+              <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                {isSearching ? (
+                  <div className="py-4 text-center text-gray-500">
+                    Searching...
+                  </div>
+                ) : (
+                  <ul className="lg:max-h-50 max-h-40 overflow-y-auto ">
+                    {searchResults.map((product) => (
+                      <li key={product.id}>
+                        <button
+                          onClick={() => handleResultClick(product.id)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group"
+                        >
+                          <span className="text-gray-700 group-hover:text-[#0F9D8F]">
+                            {product.name}
+                          </span>
+                          {product.brand?.name && (
+                            <span className="text-sm text-gray-400">
+                               {product.brand.name}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Mobile Menu (Hamburger) */}
         <AnimatePresence>
