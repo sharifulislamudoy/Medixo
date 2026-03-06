@@ -200,7 +200,7 @@ export default function AdminProductsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[1050px]"> {/* increased min-width for new column */}
+        <table className="w-full min-w-[1050px]">
           <thead className="bg-gray-100 border-b">
             <tr>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Image</th>
