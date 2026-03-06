@@ -14,12 +14,12 @@ export async function GET() {
     include: {
       generic: true,
       brand: true,
-      stock: true,   // include stock
+      stock: true,
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // Flatten stock for admin table (optional, but we keep stock.quantity for editing)
+  // Flatten stock for admin table
   const mapped = products.map(p => ({
     ...p,
     stock: p.stock?.quantity ?? 0,
@@ -42,14 +42,20 @@ export async function POST(req: Request) {
     brandName,
     image,
     description,
-    sellPrice,
     costPrice,
-    stock,           // this is the initial quantity
+    profitMargin,        // 👈 NEW: receive profit margin
+    stock,
   } = await req.json();
 
-  if (!name || !category || !mrp || !image || !description || !sellPrice || !costPrice || stock === undefined) {
+  // 👇 updated validation: profitMargin is required
+  if (!name || !category || !mrp || !image || !description || !costPrice || profitMargin === undefined || stock === undefined) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  // 👇 compute sell price from cost + margin
+  const cost = parseFloat(costPrice);
+  const margin = parseFloat(profitMargin);
+  const sellPrice = cost * (1 + margin / 100);
 
   const sku = await generateNextSKU();
 
@@ -73,7 +79,7 @@ export async function POST(req: Request) {
     brandId = brand.id;
   }
 
-  // Use transaction to create product and its stock record
+  // Transaction: create product + stock
   const product = await prisma.$transaction(async (tx) => {
     const newProduct = await tx.product.create({
       data: {
@@ -85,8 +91,9 @@ export async function POST(req: Request) {
         brandId,
         image,
         description,
-        sellPrice: parseFloat(sellPrice),
-        costPrice: parseFloat(costPrice),
+        costPrice: cost,
+        profitMargin: margin,     // 👈 store margin
+        sellPrice,                // 👈 store computed sell price
       },
       include: { generic: true, brand: true },
     });

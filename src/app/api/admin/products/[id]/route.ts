@@ -22,11 +22,11 @@ export async function PUT(
     brandName,
     image,
     description,
-    sellPrice,
     costPrice,
+    profitMargin,      // 👈 NEW
     status,
     availability,
-    stock,      // new quantity value
+    stock,
   } = body;
 
   // Handle generic upsert
@@ -61,6 +61,16 @@ export async function PUT(
 
   // Update product and stock in a transaction
   const updated = await prisma.$transaction(async (tx) => {
+    // Fetch current product to get existing cost/margin if needed for sellPrice calculation
+    const currentProduct = await tx.product.findUnique({ where: { id } });
+    if (!currentProduct) throw new Error("Product not found");
+
+    // Determine final cost and margin
+    const finalCost = costPrice !== undefined ? parseFloat(costPrice) : currentProduct.costPrice;
+    const finalMargin = profitMargin !== undefined ? parseFloat(profitMargin) : currentProduct.profitMargin;
+    // Compute new sell price
+    const computedSellPrice = finalCost * (1 + finalMargin / 100);
+
     const product = await tx.product.update({
       where: { id },
       data: {
@@ -71,8 +81,9 @@ export async function PUT(
         brandId,
         image,
         description,
-        sellPrice: sellPrice ? parseFloat(sellPrice) : undefined,
-        costPrice: costPrice ? parseFloat(costPrice) : undefined,
+        costPrice: costPrice !== undefined ? parseFloat(costPrice) : undefined,
+        profitMargin: profitMargin !== undefined ? parseFloat(profitMargin) : undefined,
+        sellPrice: computedSellPrice,   // 👈 always update sell price based on latest cost/margin
         status: status !== undefined ? status : undefined,
         availability: availability !== undefined ? availability : undefined,
       },
@@ -106,11 +117,6 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
-
-  // Delete product – Stock will be cascaded automatically
-  await prisma.product.delete({
-    where: { id },
-  });
-
+  await prisma.product.delete({ where: { id } });
   return NextResponse.json({ message: "Deleted" });
 }

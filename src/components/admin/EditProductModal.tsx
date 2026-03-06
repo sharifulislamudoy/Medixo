@@ -33,7 +33,8 @@ interface Product {
   description: string;
   sellPrice: number;
   costPrice: number;
-  stock: number;          // flattened stock quantity
+  profitMargin: number;   // 👈 NEW
+  stock: number;
 }
 
 interface Props {
@@ -52,8 +53,8 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
     brandName: "",
     image: "",
     description: "",
-    sellPrice: "",
     costPrice: "",
+    profitMargin: "",      // 👈 NEW
     stock: "",
   });
 
@@ -62,6 +63,14 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
   const [generating, setGenerating] = useState(false);
   const [genericSuggestions, setGenericSuggestions] = useState<string[]>([]);
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+
+  // 👇 computed sell price
+  const computedSellPrice = (): string => {
+    const cost = parseFloat(form.costPrice);
+    const margin = parseFloat(form.profitMargin);
+    if (isNaN(cost) || isNaN(margin)) return "0.00";
+    return (cost * (1 + margin / 100)).toFixed(2);
+  };
 
   useEffect(() => {
     if (product) {
@@ -73,8 +82,8 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
         brandName: product.brand?.name || "",
         image: product.image,
         description: product.description,
-        sellPrice: product.sellPrice.toString(),
         costPrice: product.costPrice.toString(),
+        profitMargin: product.profitMargin.toString(),   // 👈 populate margin
         stock: product.stock.toString(),
       });
     }
@@ -130,7 +139,7 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.category || !form.mrp || !form.image || !form.description || !form.sellPrice || !form.costPrice || !form.stock) {
+    if (!form.name || !form.category || !form.mrp || !form.image || !form.description || !form.costPrice || !form.profitMargin || !form.stock) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -142,7 +151,7 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
       const res = await fetch(`/api/admin/products/${product!.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(form),   // includes profitMargin, no sellPrice
       });
 
       if (!res.ok) throw new Error("Failed to update");
@@ -298,20 +307,6 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
             />
           </div>
 
-          {/* Sell Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sell Price *</label>
-            <input
-              type="number"
-              step="0.01"
-              name="sellPrice"
-              value={form.sellPrice}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
-              required
-            />
-          </div>
-
           {/* Cost Price */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price *</label>
@@ -324,6 +319,29 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
               required
             />
+          </div>
+
+          {/* Profit Margin */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Profit Margin (%) *</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              name="profitMargin"
+              value={form.profitMargin}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
+              required
+            />
+          </div>
+
+          {/* Computed Sell Price (read‑only) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sell Price (auto)</label>
+            <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-gray-700">
+              ৳ {computedSellPrice()}
+            </div>
           </div>
 
           {/* Stock (Quantity) */}

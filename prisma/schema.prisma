@@ -102,6 +102,7 @@ model Product {
   description  String         @db.Text
   sellPrice    Float
   costPrice    Float
+  profitMargin Float          // new field: profit margin percentage
   status       Boolean        @default(true)    // true = show in public
   availability Boolean        @default(true)    // true = in stock, false = out of stock
   createdAt    DateTime       @default(now())

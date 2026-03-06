@@ -37,9 +37,9 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
     brandName: "",
     image: "",
     description: "",
-    sellPrice: "",
     costPrice: "",
-    stock: "",          // this is the initial quantity
+    profitMargin: "",      // 👈 NEW field
+    stock: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,14 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
   const [generating, setGenerating] = useState(false);
   const [genericSuggestions, setGenericSuggestions] = useState<string[]>([]);
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
+
+  // 👇 computed sell price
+  const computedSellPrice = (): string => {
+    const cost = parseFloat(form.costPrice);
+    const margin = parseFloat(form.profitMargin);
+    if (isNaN(cost) || isNaN(margin)) return "0.00";
+    return (cost * (1 + margin / 100)).toFixed(2);
+  };
 
   useEffect(() => {
     fetch("/api/generics").then(res => res.json()).then(setGenericSuggestions);
@@ -98,7 +106,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.category || !form.mrp || !form.image || !form.description || !form.sellPrice || !form.costPrice || !form.stock) {
+    if (!form.name || !form.category || !form.mrp || !form.image || !form.description || !form.costPrice || !form.profitMargin || !form.stock) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -110,7 +118,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(form),   // includes profitMargin, no sellPrice
       });
 
       if (!res.ok) throw new Error("Failed to create");
@@ -126,8 +134,8 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
         brandName: "",
         image: "",
         description: "",
-        sellPrice: "",
         costPrice: "",
+        profitMargin: "",
         stock: "",
       });
     } catch (error) {
@@ -279,20 +287,6 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
             />
           </div>
 
-          {/* Sell Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sell Price *</label>
-            <input
-              type="number"
-              step="0.01"
-              name="sellPrice"
-              value={form.sellPrice}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
-              required
-            />
-          </div>
-
           {/* Cost Price */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price *</label>
@@ -305,6 +299,29 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
               required
             />
+          </div>
+
+          {/* Profit Margin */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Profit Margin (%) *</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              name="profitMargin"
+              value={form.profitMargin}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
+              required
+            />
+          </div>
+
+          {/* Computed Sell Price (read‑only) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sell Price (auto)</label>
+            <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-gray-700">
+              ৳ {computedSellPrice()}
+            </div>
           </div>
 
           {/* Stock (Quantity) */}

@@ -8,12 +8,11 @@ export async function GET() {
       include: {
         generic: true,
         brand: true,
-        stock: true,          // include stock relation
+        stock: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Map to include stock quantity as a flat field (for frontend compatibility)
     const mapped = products.map(p => ({
       ...p,
       stock: p.stock?.quantity ?? 0,

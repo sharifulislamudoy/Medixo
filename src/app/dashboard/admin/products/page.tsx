@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation"; // for redirect
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Modal from "@/components/ui/Modal";
 import CreateProductModal from "@/components/admin/CreateProductModal";
@@ -22,6 +22,7 @@ interface Product {
   description: string;
   sellPrice: number;
   costPrice: number;
+  profitMargin: number;   // 👈 NEW
   stock: number;
   status: boolean;
   availability: boolean;
@@ -33,7 +34,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filtered, setFiltered] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true); // loading state
+  const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -50,9 +51,8 @@ export default function AdminProductsPage() {
       const res = await fetch("/api/admin/products");
       if (!res.ok) {
         if (res.status === 401) {
-          // Redirect to login or show unauthorized message
           toast.error("You are not authorized. Please log in as admin.");
-          router.push("/login"); // adjust to your login route
+          router.push("/login");
           return;
         }
         throw new Error(`Failed to fetch: ${res.status}`);
@@ -100,7 +100,7 @@ export default function AdminProductsPage() {
         throw new Error("Failed to delete");
       }
       toast.success("Product deleted", { id: toastId });
-      fetchProducts(); // refresh list
+      fetchProducts();
     } catch (error) {
       toast.error("Failed to delete", { id: toastId });
     }
@@ -114,7 +114,6 @@ export default function AdminProductsPage() {
 
   const handleToggle = async (product: Product, field: "status" | "availability") => {
     const newValue = !product[field];
-    // Optimistic update
     setProducts((prev) =>
       prev.map((p) => (p.id === product.id ? { ...p, [field]: newValue } : p))
     );
@@ -139,10 +138,8 @@ export default function AdminProductsPage() {
         throw new Error(error.error || "Failed to update");
       }
       toast.success(`${field} updated`, { id: toastId });
-      // Refresh to ensure consistency (optional)
       fetchProducts();
     } catch (error: any) {
-      // Revert optimistic update
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, [field]: !newValue } : p))
       );
@@ -183,7 +180,6 @@ export default function AdminProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-gray-800">Products</h1>
         <div className="flex items-center gap-3">
-          {/* Search */}
           <input
             type="text"
             placeholder="Search products..."
@@ -204,7 +200,7 @@ export default function AdminProductsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[950px]">
+        <table className="w-full min-w-[1050px]"> {/* increased min-width for new column */}
           <thead className="bg-gray-100 border-b">
             <tr>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Image</th>
@@ -214,9 +210,10 @@ export default function AdminProductsPage() {
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">MRP</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Cost</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Sell</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Margin %</th> {/* 👈 NEW COLUMN */}
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">In Stock</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -249,6 +246,7 @@ export default function AdminProductsPage() {
                   <td className="px-2 py-2 text-sm text-gray-600">৳{product.mrp}</td>
                   <td className="px-2 py-2 text-sm text-gray-600">৳{product.costPrice}</td>
                   <td className="px-2 py-2 text-sm text-gray-600">৳{product.sellPrice}</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">{product.profitMargin}%</td> {/* 👈 NEW DATA */}
                   <td className="px-2 py-2 text-sm text-gray-600">{product.stock}</td>
                   {/* Status Toggle */}
                   <td className="px-2 py-2">
