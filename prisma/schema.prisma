@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,7 +9,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 
 enum Role {
   ADMIN
@@ -40,6 +36,19 @@ enum ProductCategory {
   OTHER
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  DUE
+  PAID
+}
+
 model User {
   id        String     @id @default(cuid())
   name      String
@@ -51,6 +60,7 @@ model User {
   role      Role       @default(SHOP_OWNER)
   status    UserStatus @default(PENDING)
   createdAt DateTime   @default(now())
+  orders    Order[]    // relation to Order
 }
 
 model Advertisement {
@@ -69,7 +79,7 @@ model PromotionModal {
   title     String
   imageUrl  String
   hyperlink String?
-  isVisible Boolean  @default(false) // default false
+  isVisible Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -102,12 +112,13 @@ model Product {
   description  String         @db.Text
   sellPrice    Float
   costPrice    Float
-  profitMargin Float          // new field: profit margin percentage
-  status       Boolean        @default(true)    // true = show in public
-  availability Boolean        @default(true)    // true = in stock, false = out of stock
+  profitMargin Float
+  status       Boolean        @default(true)
+  availability Boolean        @default(true)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  stock        Stock?                           // relation to separate stock table
+  stock        Stock?         // relation to separate stock table
+  orderItems   OrderItem[]    // 👈 ADD THIS RELATION (one-to-many)
 }
 
 model Stock {
@@ -117,4 +128,35 @@ model Stock {
   quantity  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  invoiceNo        String        @unique
+  customerName     String
+  customerShopName String?
+  customerAddress  String
+  customerPhone    String
+  orderDate        DateTime      @default(now())
+  deliveryDate     DateTime
+  paymentMethod    String        @default("Cash on Delivery")
+  paymentStatus    PaymentStatus @default(DUE)
+  status           OrderStatus   @default(PENDING)
+  totalAmount      Float
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  items            OrderItem[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float    // snapshot at time of order
+  createdAt DateTime @default(now())
 }

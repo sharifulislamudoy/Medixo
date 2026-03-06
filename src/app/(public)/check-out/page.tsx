@@ -1,4 +1,3 @@
-// app/check-out/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,17 +6,25 @@ import { useCart } from "@/contexts/CartContext";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react"; // add this
+import toast from "react-hot-toast"; // add this
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice } = useCart();
+  const { items, totalPrice, clearCart } = useCart();
+  const { data: session, status } = useSession();
   const [showModal, setShowModal] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  // Redirect if not authenticated
+  if (status === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
 
   // Calculate discount (1% if subtotal > 4000)
   const discount = totalPrice > 4000 ? totalPrice * 0.01 : 0;
   const finalTotal = totalPrice - discount;
-
-  // Round final total to nearest integer (0.5 and above rounds up)
   const payableTotal = Math.round(finalTotal);
 
   // Calculate delivery date based on current time
@@ -26,9 +33,7 @@ export default function CheckoutPage() {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    // If order placed after 11:00 AM, delivery is next day; otherwise today
     if (currentHour > 11 || (currentHour === 11 && currentMinute > 0)) {
-      // next day
       const tomorrow = new Date(now);
       tomorrow.setDate(now.getDate() + 1);
       return tomorrow.toLocaleDateString("bn-BD", {
@@ -38,7 +43,6 @@ export default function CheckoutPage() {
         day: "numeric",
       });
     } else {
-      // today
       return now.toLocaleDateString("bn-BD", {
         weekday: "long",
         year: "numeric",
@@ -50,14 +54,38 @@ export default function CheckoutPage() {
 
   const deliveryDate = getDeliveryDate();
 
-  // Handle "Place Order" click
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (totalPrice < 500) {
       setShowModal(true);
-    } else {
-      // Proceed to order placement (e.g., redirect to order confirmation)
-      alert("Order placed successfully! (demo)");
-      // router.push("/order-confirmation");
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    try {
+      const orderItems = items.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+      }));
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: orderItems, totalPrice }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to place order');
+      }
+
+      clearCart();
+      toast.success('Order placed successfully!');
+      router.push('/history');
+    } catch (error: any) {
+      toast.error(error.message || 'Something went wrong');
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -81,16 +109,14 @@ export default function CheckoutPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Checkout</h1>
 
-      {/* Mobile Order Summary (visible only on small screens) */}
+      {/* Mobile Order Summary */}
       <div className="block md:hidden mb-6">
         <div className="bg-white rounded-xl shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
-          {/* Table-like header */}
           <div className="grid grid-cols-2 font-medium text-gray-500 text-sm pb-2 border-b border-gray-200 mb-2">
             <div>Item</div>
             <div className="text-right">Amount</div>
           </div>
-          {/* Rows */}
           <div className="space-y-2">
             <div className="grid grid-cols-2">
               <span className="text-gray-600">Subtotal</span>
@@ -114,9 +140,10 @@ export default function CheckoutPage() {
           </div>
           <button
             onClick={handlePlaceOrder}
-            className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition"
+            disabled={isPlacingOrder}
+            className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
           >
-            Place Order
+            {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
           </button>
         </div>
       </div>
@@ -153,16 +180,14 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Desktop Order Summary (hidden on mobile, visible on md+) */}
+        {/* Desktop Order Summary */}
         <div className="hidden md:block md:col-span-1">
           <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
-            {/* Table-like header */}
             <div className="grid grid-cols-2 font-medium text-gray-500 text-sm pb-2 border-b border-gray-200 mb-2">
               <div>Item</div>
               <div className="text-right">Amount</div>
             </div>
-            {/* Rows */}
             <div className="space-y-2">
               <div className="grid grid-cols-2">
                 <span className="text-gray-600">Subtotal</span>
@@ -178,12 +203,10 @@ export default function CheckoutPage() {
                 <span>Total</span>
                 <span className="text-right text-[#0F9D8F]">৳{finalTotal.toFixed(2)}</span>
               </div>
-              {/* Shipping row - now above Payable Total */}
               <div className="grid grid-cols-2">
                 <span className="text-gray-600">Shipping</span>
                 <span className="text-right font-medium text-green-600">Free</span>
               </div>
-              {/* Payable Total row (rounded) */}
               <div className="grid grid-cols-2 text-gray-800">
                 <span>Payable Total</span>
                 <span className="text-right font-bold text-[#0F9D8F]">৳{payableTotal}</span>
@@ -196,15 +219,16 @@ export default function CheckoutPage() {
             </div>
             <button
               onClick={handlePlaceOrder}
-              className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition"
+              disabled={isPlacingOrder}
+              className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
             >
-              Place Order
+              {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Minimum Order Modal (unchanged) */}
+      {/* Minimum Order Modal */}
       <AnimatePresence>
         {showModal && (
           <>
