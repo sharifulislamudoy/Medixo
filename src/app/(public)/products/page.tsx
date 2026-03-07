@@ -191,7 +191,7 @@ export default function ProductsPage() {
             {/* Products Display */}
             {viewMode === "card" ? (
                 /* ---------- CARD VIEW ---------- */
-                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                     {isLoading ? (
                         Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
                     ) : (
@@ -261,6 +261,9 @@ export default function ProductsPage() {
                                                 <p className="text-sm text-gray-600 mt-1">
                                                     {product.generic?.name} {product.brand?.name && `| ${product.brand.name}`}
                                                 </p>
+                                                <span className={`text-sm ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
+                                                    {product.availability ? 'In Stock' : 'Out of Stock'}
+                                                </span>
                                                 <div className="flex items-center justify-between mt-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xl font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
@@ -268,20 +271,17 @@ export default function ProductsPage() {
                                                             <span className="text-sm text-gray-400 line-through">৳{product.mrp}</span>
                                                         )}
                                                     </div>
-                                                    <span className={`text-sm ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
-                                                        {product.availability ? 'In Stock' : 'Out of Stock'}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                         {/* Buttons container - clicks don't navigate */}
-                                        <div className="p-4 pt-0" onClick={(e) => e.stopPropagation()}>
+                                        <div className="p-1 md:p-4 pb-2" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex gap-2">
                                                 {isAdding ? (
                                                     <div className="flex-1 flex items-center justify-between gap-1 bg-gray-100 rounded-lg">
                                                         <button
                                                             onClick={() => setTempQuantity(prev => Math.max(prev - 1, 1))}
-                                                            className="p-2 text-gray-600 hover:text-[#0F9D8F]"
+                                                            className="p-2  text-gray-600 hover:text-[#0F9D8F]"
                                                             disabled={tempQuantity <= 1}
                                                         >
                                                             <Minus size={18} />

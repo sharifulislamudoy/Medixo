@@ -92,6 +92,7 @@ async function ProductDetails({ id }: { id: string }) {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="md:flex">
+        {/* Left column: Image with favourite button overlay */}
         <div className="md:w-1/2 relative h-80 md:h-auto">
           <Image
             src={product.image}
@@ -100,12 +101,18 @@ async function ProductDetails({ id }: { id: string }) {
             className="object-contain p-4"
           />
           {discount > 0 && (
-            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
               {discount}% OFF
             </div>
           )}
+          {/* Favourite button placed on the image (top right) */}
+          <div className="absolute top-4 right-4 z-10">
+            <FavouriteButton product={product} />
+          </div>
         </div>
-        <div className="md:w-1/2 p-6 md:p-8">
+
+        {/* Right column: Details and Add to Cart */}
+        <div className="md:w-1/2 p-4">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.name}</h1>
           <p className="text-gray-600 mb-4">
             {product.generic?.name} {product.brand?.name && `by ${product.brand.name}`}
@@ -128,10 +135,8 @@ async function ProductDetails({ id }: { id: string }) {
             <h3 className="font-medium text-black mb-2">Description</h3>
             <p className="text-gray-500 whitespace-pre-line">{product.description}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <AddToCartButton product={product} />
-            <FavouriteButton product={product} />
-          </div>
+          {/* Only Add to Cart remains here */}
+          <AddToCartButton product={product} />
         </div>
       </div>
     </div>

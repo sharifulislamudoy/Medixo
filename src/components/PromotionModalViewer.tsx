@@ -79,7 +79,7 @@ export default function PromotionModalViewer() {
             >
               <button
                 onClick={handleClose}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
+                className="absolute top-3 right-3 text-black text-xl"
                 aria-label="Close"
               >
                 ✕
