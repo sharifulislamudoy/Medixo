@@ -185,6 +185,14 @@ model Zone {
   @@unique([cityId, code])
 }
 
+model DeliveryCode {
+  id        String   @id @default(cuid())
+  code      String   @unique // e.g. DC0001
+  areas     Area[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Area {
   id        String   @id @default(cuid())
   name      String
@@ -194,7 +202,10 @@ model Area {
   trCode    String   @unique 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[]   // 👈 NEW: relation back to users
+  users     User[]   
+  deliveryCodeId String?
+  deliveryCode   DeliveryCode? @relation(fields: [deliveryCodeId], references: [id])
 
   @@unique([zoneId, code])
 }
+

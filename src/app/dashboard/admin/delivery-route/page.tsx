@@ -5,20 +5,24 @@ import { motion } from "framer-motion";
 import CityTable from "@/components/admin/delivery/CityTable";
 import ZoneTable from "@/components/admin/delivery/ZoneTable";
 import AreaTable from "@/components/admin/delivery/AreaTable";
+import DeliveryCodeTable from "@/components/admin/delivery/DeliveryCodeTable";
 import CreateCityModal from "@/components/admin/delivery/CreateCityModal";
 import EditCityModal from "@/components/admin/delivery/EditCityModal";
 import CreateZoneModal from "@/components/admin/delivery/CreateZoneModal";
 import EditZoneModal from "@/components/admin/delivery/EditZoneModal";
 import CreateAreaModal from "@/components/admin/delivery/CreateAreaModal";
 import EditAreaModal from "@/components/admin/delivery/EditAreaModal";
+import CreateDeliveryCodeModal from "@/components/admin/delivery/CreateDeliveryCodeModal";
+import EditDeliveryCodeModal from "@/components/admin/delivery/EditDeliveryCodeModal";
 
 export default function DeliveryPage() {
-  const [activeTab, setActiveTab] = useState<"cities" | "zones" | "areas">("cities");
+  const [activeTab, setActiveTab] = useState<"cities" | "zones" | "areas" | "delivery-codes">("cities");
 
   // Refresh triggers
   const [refreshCities, setRefreshCities] = useState(0);
   const [refreshZones, setRefreshZones] = useState(0);
   const [refreshAreas, setRefreshAreas] = useState(0);
+  const [refreshDeliveryCodes, setRefreshDeliveryCodes] = useState(0);
 
   // Modals state
   const [isCreateCityOpen, setIsCreateCityOpen] = useState(false);
@@ -27,11 +31,14 @@ export default function DeliveryPage() {
   const [editingZone, setEditingZone] = useState<any>(null);
   const [isCreateAreaOpen, setIsCreateAreaOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<any>(null);
+  const [isCreateDeliveryCodeOpen, setIsCreateDeliveryCodeOpen] = useState(false);
+  const [editingDeliveryCode, setEditingDeliveryCode] = useState<any>(null);
 
   const handleSuccess = () => {
     if (activeTab === "cities") setRefreshCities((prev) => prev + 1);
     if (activeTab === "zones") setRefreshZones((prev) => prev + 1);
     if (activeTab === "areas") setRefreshAreas((prev) => prev + 1);
+    if (activeTab === "delivery-codes") setRefreshDeliveryCodes((prev) => prev + 1);
   };
 
   return (
@@ -40,7 +47,7 @@ export default function DeliveryPage() {
 
       {/* Tabs */}
       <div className="flex space-x-4 border-b mb-6">
-        {(["cities", "zones", "areas"] as const).map((tab) => (
+        {(["cities", "zones", "areas", "delivery-codes"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -50,7 +57,7 @@ export default function DeliveryPage() {
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            {tab}
+            {tab === "delivery-codes" ? "Delivery Codes" : tab}
           </button>
         ))}
       </div>
@@ -116,6 +123,26 @@ export default function DeliveryPage() {
             />
           </>
         )}
+
+        {activeTab === "delivery-codes" && (
+          <>
+            <div className="flex justify-end mb-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsCreateDeliveryCodeOpen(true)}
+                className="bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-4 py-2 rounded-lg shadow hover:shadow-lg"
+              >
+                + Add Delivery Code
+              </motion.button>
+            </div>
+            <DeliveryCodeTable
+              key={refreshDeliveryCodes}
+              onEdit={(dc) => setEditingDeliveryCode(dc)}
+              onRefresh={handleSuccess}
+            />
+          </>
+        )}
       </div>
 
       {/* Modals */}
@@ -153,6 +180,18 @@ export default function DeliveryPage() {
         onClose={() => setEditingArea(null)}
         onSuccess={handleSuccess}
         area={editingArea}
+      />
+
+      <CreateDeliveryCodeModal
+        isOpen={isCreateDeliveryCodeOpen}
+        onClose={() => setIsCreateDeliveryCodeOpen(false)}
+        onSuccess={handleSuccess}
+      />
+      <EditDeliveryCodeModal
+        isOpen={!!editingDeliveryCode}
+        onClose={() => setEditingDeliveryCode(null)}
+        onSuccess={handleSuccess}
+        deliveryCode={editingDeliveryCode}
       />
     </div>
   );

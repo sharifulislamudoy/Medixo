@@ -18,7 +18,7 @@ export default function AdminLayout({
     { name: "Users", href: "/dashboard/admin/users" },
     { name: "Products", href: "/dashboard/admin/products" },
     { name: "Orders", href: "/dashboard/admin/orders" },
-    { name: "Hub", href: "/dashboard/admin/hub" },
+    { name: "Delivery Route", href: "/dashboard/admin/delivery-route" },
     
   ];
 
