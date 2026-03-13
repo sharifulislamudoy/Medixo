@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+
+// Import Lucide icons
+import {
+  Home,
+  Package,
+  ShoppingBag,
+  Heart,
+  History,
+  Target,
+  Wallet,
+  ClipboardList,
+  LogOut,
+  User,
+  Search,
+  Menu,
+  X,
+} from "lucide-react";
 
 // Simple product type for search results
 interface SearchProduct {
@@ -29,7 +46,6 @@ export default function Navbar() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
-  // Fixed: useRef initialized with null and proper type
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 🔐 Get the current session (user login info)
@@ -45,13 +61,28 @@ export default function Navbar() {
   const dashboardRoute =
     roleRouteMap[session?.user?.role as string] || "/dashboard";
 
+  // Navigation items for logged-in users (used in desktop dropdown and bottom nav for customers)
+  const loggedInNavItems = [
+    { name: "Products", href: "/products", icon: Package },
+    { name: "Bag", href: "/bag", icon: ShoppingBag },
+    { name: "Favourite", href: "/favourite", icon: Heart },
+    { name: "History", href: "/history", icon: History },
+  ];
+
+  // Navigation items for delivery boy (used in bottom nav)
+  const deliveryBoyNavItems = [
+    { name: "Orders", href: "/orders", icon: ClipboardList },
+    { name: "Target", href: "/target", icon: Target },
+    { name: "Cash", href: "/cash", icon: Wallet },
+    { name: "History", href: "/history", icon: History },
+  ];
+
   // Fetch all products once on mount
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
-        // Store minimal data needed for search
         setAllProducts(
           data.map((p: any) => ({
             id: p.id,
@@ -90,7 +121,7 @@ export default function Navbar() {
             (product.brand?.name &&
               product.brand.name.toLowerCase().includes(query))
         )
-        .slice(0, 5); // limit to 5 results
+        .slice(0, 5);
 
       setSearchResults(filtered);
       setIsSearching(false);
@@ -153,7 +184,7 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 10);
     };
 
-    handleResize(); // set initial value
+    handleResize();
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll);
 
@@ -165,18 +196,9 @@ export default function Navbar() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  // 🔤 Get first letter of user's name (fallback to "U" if name is missing)
   const userInitial = session?.user?.name
     ? session.user.name.charAt(0).toUpperCase()
     : "U";
-
-  // Navigation items for logged-in users (used in desktop dropdown and mobile bottom nav)
-  const loggedInNavItems = [
-    { name: "Products", href: "/products", icon: "💊" },
-    { name: "Bag", href: "/bag", icon: "🛒" },
-    { name: "Favourite", href: "/favourite", icon: "❤️" },
-    { name: "History", href: "/history", icon: "📜" },
-  ];
 
   return (
     <>
@@ -184,10 +206,11 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          isScrolled
             ? "bg-white/95 backdrop-blur-md shadow-lg"
             : "bg-white shadow-sm"
-          }`}
+        }`}
       >
         {/* Decorative top border gradient */}
         <div className="h-1 w-full bg-gradient-to-r from-[#156A98] via-[#0F9D8F] to-[#156A98]" />
@@ -204,28 +227,11 @@ export default function Navbar() {
                 className="md:hidden p-2 rounded-lg text-gray-600 hover:text-[#156A98] hover:bg-[#156A98]/10 focus:outline-none transition-all duration-200"
                 aria-label="Toggle menu"
               >
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  {isMenuOpen ? (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  ) : (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  )}
-                </svg>
+                {isMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </motion.button>
 
               {/* Logo + Brand Name */}
@@ -289,29 +295,15 @@ export default function Navbar() {
                   onFocus={handleSearchFocus}
                   className="w-full text-black border border-gray-200 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-[#0F9D8F]/50 focus:border-[#0F9D8F] transition-all duration-300"
                 />
-                <svg
-                  className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
             </div>
 
             {/* Right: Login Button OR User Avatar Circle */}
             <div className="flex items-center gap-3 flex-shrink-0">
               {status === "loading" ? (
-                // Show a small placeholder while session loads
                 <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
               ) : session ? (
-                // 👤 User is LOGGED IN → Show Avatar Circle with dropdown
                 <div className="relative">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -333,7 +325,6 @@ export default function Navbar() {
                         transition={{ duration: 0.2 }}
                         className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
                       >
-                        {/* User info at top of dropdown */}
                         <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#156A98]/5 to-[#0F9D8F]/5">
                           <p className="text-sm font-semibold text-gray-800 truncate">
                             {session.user?.name}
@@ -343,57 +334,58 @@ export default function Navbar() {
                           </p>
                         </div>
 
-                        {/* Conditionally render items based on screen size */}
                         {!isMobile ? (
-                          // Desktop: Show all logged-in nav items + Dashboard + Sign Out
                           <>
-                            {loggedInNavItems.map((item) => (
-                              <Link
-                                key={item.name}
-                                href={item.href}
-                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
-                                onClick={() => setIsDropdownOpen(false)}
-                              >
-                                <span className="mr-2">{item.icon}</span>
-                                {item.name}
-                              </Link>
-                            ))}
+                            {loggedInNavItems.map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <Link
+                                  key={item.name}
+                                  href={item.href}
+                                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
+                                  onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  {item.name}
+                                </Link>
+                              );
+                            })}
                             <Link
                               href={dashboardRoute}
-                              className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
                               onClick={() => setIsDropdownOpen(false)}
                             >
+                              <User className="h-4 w-4" />
                               Dashboard
                             </Link>
                           </>
                         ) : (
-                          // Mobile: Show only Dashboard + Sign Out
                           <>
                             <Link
                               href={dashboardRoute}
-                              className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#0F9D8F]/10 hover:text-[#0F9D8F] transition-colors duration-200"
                               onClick={() => setIsDropdownOpen(false)}
                             >
+                              <User className="h-4 w-4" />
                               Dashboard
                             </Link>
                           </>
                         )}
 
-                        {/* Sign Out button (common for both) */}
                         <button
                           onClick={() => {
                             setIsDropdownOpen(false);
                             signOut({ callbackUrl: "/login" });
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-200"
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors duration-200"
                         >
+                          <LogOut className="h-4 w-4" />
                           Sign Out
                         </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Click outside to close dropdown */}
                   {isDropdownOpen && (
                     <div
                       className="fixed inset-0 z-40"
@@ -402,7 +394,6 @@ export default function Navbar() {
                   )}
                 </div>
               ) : (
-                // 🔒 User is NOT logged in → Show Login Button
                 <Link href="/login">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -410,19 +401,7 @@ export default function Navbar() {
                     className="relative group bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-5 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 flex items-center gap-2 overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                    <svg
-                      className="h-5 w-5 relative z-10"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+                    <User className="h-5 w-5 relative z-10" />
                     <span className="relative z-10">Login</span>
                   </motion.button>
                 </Link>
@@ -439,7 +418,7 @@ export default function Navbar() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="relative w-full"
-              ref={searchRef} // reuse same ref to capture clicks for dropdown
+              ref={searchRef}
             >
               <input
                 type="text"
@@ -449,25 +428,13 @@ export default function Navbar() {
                 onFocus={handleSearchFocus}
                 className="w-full text-black border border-gray-200 rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-[#0F9D8F]/50 focus:border-[#0F9D8F] transition-all duration-300 group-hover:shadow-md"
               />
-              <svg
-                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 group-hover:text-[#0F9D8F] transition-colors duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 group-hover:text-[#0F9D8F] transition-colors duration-300" />
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#156A98]/20 to-[#0F9D8F]/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300 -z-10" />
             </motion.div>
           </div>
         </div>
 
-        {/* Search Results Dropdown (global, appears below navbar) */}
+        {/* Search Results Dropdown */}
         <AnimatePresence>
           {showSearchDropdown && (searchResults.length > 0 || isSearching) && (
             <motion.div
@@ -494,7 +461,7 @@ export default function Navbar() {
                           </span>
                           {product.brand?.name && (
                             <span className="text-sm text-gray-400">
-                               {product.brand.name}
+                              {product.brand.name}
                             </span>
                           )}
                         </button>
@@ -564,26 +531,46 @@ export default function Navbar() {
           className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden"
         >
           <div className="flex justify-around items-center py-2">
-            {/* Home */}
-            <Link
-              href="/"
-              className="flex flex-col items-center p-2 text-gray-600 hover:text-[#0F9D8F] transition-colors"
-            >
-              <span className="text-xl">🏠</span>
-              <span className="text-xs mt-1">Home</span>
-            </Link>
-
-            {/* Logged-in nav items */}
-            {loggedInNavItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex flex-col items-center p-2 text-gray-600 hover:text-[#0F9D8F] transition-colors"
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-xs mt-1">{item.name}</span>
-              </Link>
-            ))}
+            {session.user.role === "DELIVERY_BOY" ? (
+              // Delivery Boy items
+              deliveryBoyNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex flex-col items-center p-2 text-gray-600 hover:text-[#0F9D8F] transition-colors"
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-xs mt-1">{item.name}</span>
+                  </Link>
+                );
+              })
+            ) : (
+              // All other roles (ADMIN, SHOP_OWNER, SUPPLIER)
+              <>
+                <Link
+                  href="/"
+                  className="flex flex-col items-center p-2 text-gray-600 hover:text-[#0F9D8F] transition-colors"
+                >
+                  <Home className="h-5 w-5" />
+                  <span className="text-xs mt-1">Home</span>
+                </Link>
+                {loggedInNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className="flex flex-col items-center p-2 text-gray-600 hover:text-[#0F9D8F] transition-colors"
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-xs mt-1">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </div>
         </motion.div>
       )}
