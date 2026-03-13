@@ -69,13 +69,19 @@ export default function Navbar() {
     { name: "History", href: "/history", icon: History },
   ];
 
-  // Navigation items for delivery boy (used in bottom nav)
+  // Navigation items for delivery boy (used in bottom nav and desktop dropdown)
   const deliveryBoyNavItems = [
     { name: "Orders", href: "/orders", icon: ClipboardList },
     { name: "Target", href: "/target", icon: Target },
     { name: "Cash", href: "/cash", icon: Wallet },
     { name: "History", href: "/history", icon: History },
   ];
+
+  // Determine which set of items to show in the desktop dropdown based on role
+  const dropdownNavItems =
+    session?.user?.role === "DELIVERY_BOY"
+      ? deliveryBoyNavItems
+      : loggedInNavItems;
 
   // Fetch all products once on mount
   useEffect(() => {
@@ -336,7 +342,8 @@ export default function Navbar() {
 
                         {!isMobile ? (
                           <>
-                            {loggedInNavItems.map((item) => {
+                            {/* Role-specific navigation items for desktop */}
+                            {dropdownNavItems.map((item) => {
                               const Icon = item.icon;
                               return (
                                 <Link
@@ -360,6 +367,7 @@ export default function Navbar() {
                             </Link>
                           </>
                         ) : (
+                          // On mobile, only show Dashboard in the dropdown
                           <>
                             <Link
                               href={dashboardRoute}
