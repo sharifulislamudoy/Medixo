@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// GET order details (already exists)
+// GET order details
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -185,8 +185,7 @@ export async function PUT(
         );
       }
 
-      // Update order item quantity and price (price may have changed? we keep original price per item)
-      // We'll keep the original price from the existing item (price at order time)
+      // Update order item quantity and price (keep original price)
       newTotal += existing.price * reqItem.quantity;
 
       updates.push(

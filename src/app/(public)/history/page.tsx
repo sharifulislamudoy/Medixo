@@ -247,7 +247,7 @@ export default function HistoryPage() {
                     : 'text-red-600'
                 }`}
               >
-                Status: {order.status}
+                {order.status}
               </p>
             </div>
           ))}

@@ -235,7 +235,7 @@ export default function AdminOrdersPage() {
           placeholder="Search by invoice, customer, phone, delivery code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black w-full sm:w-80"
+          className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black  w-100"
         />
       </div>
 
