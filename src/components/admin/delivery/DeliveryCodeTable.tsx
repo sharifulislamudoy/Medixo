@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { Pencil, Trash2 } from "lucide-react";
 import AssignDeliveryCodeModal from "@/components/AssignDeliveryCodeModal";
+import Modal from "@/components/ui/Modal";
 
 interface Area {
   id: string;
@@ -41,6 +42,8 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedBoy, setSelectedBoy] = useState<{ id: string; currentCodeId: string } | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<{ id: string; code: string } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchDeliveryCodes();
@@ -58,10 +61,10 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this delivery code?")) return;
+  const handleDelete = async () => {
+    if (!deleteCandidate) return;
     try {
-      const res = await fetch(`/api/admin/delivery/delivery-codes/${id}`, {
+      const res = await fetch(`/api/admin/delivery/delivery-codes/${deleteCandidate.id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();
@@ -70,6 +73,9 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
       onRefresh();
     } catch {
       toast.error("Failed to delete delivery code");
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteCandidate(null);
     }
   };
 
@@ -193,7 +199,10 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
                       <Pencil className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(dc.id)}
+                      onClick={() => {
+                        setDeleteCandidate({ id: dc.id, code: dc.code });
+                        setShowDeleteModal(true);
+                      }}
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -212,6 +221,30 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+        <div className="p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Delete</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Are you sure you want to delete delivery code <span className="font-mono font-bold">{deleteCandidate?.code}</span>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Reassign Modal */}
       {selectedBoy && (

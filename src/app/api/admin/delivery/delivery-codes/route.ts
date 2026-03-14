@@ -78,10 +78,10 @@ export async function POST(req: Request) {
 
     let nextNumber = 1;
     if (lastCode) {
-      const lastNumber = parseInt(lastCode.code.replace("DC", ""));
+      const lastNumber = parseInt(lastCode.code.replace("DC-", ""));
       nextNumber = lastNumber + 1;
     }
-    const newCode = `DC${String(nextNumber).padStart(4, "0")}`;
+    const newCode = `DC-${String(nextNumber).padStart(4, "0")}`;
 
     // Create delivery code and assign areas
     const deliveryCode = await prisma.deliveryCode.create({
