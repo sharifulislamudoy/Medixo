@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, UserPlus } from "lucide-react";
 import AssignDeliveryCodeModal from "@/components/AssignDeliveryCodeModal";
 import Modal from "@/components/ui/Modal";
+import AssignBoyToCodeModal from "./AssignBoyToCodeModal";
 
 interface Area {
   id: string;
@@ -44,6 +45,8 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
   const [selectedBoy, setSelectedBoy] = useState<{ id: string; currentCodeId: string } | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<{ id: string; code: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [assigningCode, setAssigningCode] = useState<DeliveryCode | null>(null);
+  const [showAssignBoyModal, setShowAssignBoyModal] = useState(false);
 
   useEffect(() => {
     fetchDeliveryCodes();
@@ -110,7 +113,7 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-48"></div></td>
       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
       <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-      <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex justify-end space-x-3"><div className="h-4 w-4 bg-gray-200 rounded"></div><div className="h-4 w-4 bg-gray-200 rounded"></div></div></td>
+      <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex justify-end space-x-3"><div className="h-4 w-4 bg-gray-200 rounded"></div><div className="h-4 w-4 bg-gray-200 rounded"></div><div className="h-4 w-4 bg-gray-200 rounded"></div></div></td>
     </tr>
   ));
 
@@ -193,6 +196,16 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
                   <td className="px-6 py-4 whitespace-nowrap text-gray-600">{cities || "—"}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
+                      onClick={() => {
+                        setAssigningCode(dc);
+                        setShowAssignBoyModal(true);
+                      }}
+                      className="text-green-600 hover:text-green-900 mr-3"
+                      title="Assign delivery boy"
+                    >
+                      <UserPlus className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => onEdit(dc)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
                     >
@@ -258,6 +271,20 @@ export default function DeliveryCodeTable({ onEdit, onRefresh }: Props) {
           currentDeliveryCodeId={selectedBoy.currentCodeId}
         />
       )}
+
+      {/* Assign Boy to Code Modal */}
+      <AssignBoyToCodeModal
+        isOpen={showAssignBoyModal}
+        onClose={() => {
+          setShowAssignBoyModal(false);
+          setAssigningCode(null);
+        }}
+        deliveryCode={assigningCode}
+        onSuccess={() => {
+          fetchDeliveryCodes();
+          onRefresh();
+        }}
+      />
     </>
   );
 }
