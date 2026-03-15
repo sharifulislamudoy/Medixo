@@ -224,7 +224,7 @@ export default function HistoryPage() {
       {orders.length === 0 ? (
         <p className="text-gray-600">No orders yet.</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {orders.map(order => (
             <div
               key={order.id}
