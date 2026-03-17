@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -14,11 +14,6 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { paymentStatus } = await req.json(); // "DUE" or "PAID"
-
-    if (!["DUE", "PAID"].includes(paymentStatus)) {
-      return NextResponse.json({ error: "Invalid payment status" }, { status: 400 });
-    }
 
     // Get delivery boy's assigned delivery code
     const deliveryBoy = await prisma.user.findUnique({
@@ -33,10 +28,10 @@ export async function PATCH(
       );
     }
 
-    // Fetch the order to ensure it belongs to this delivery boy and is SHIPPED
+    // Fetch order with items
     const order = await prisma.order.findUnique({
       where: { id },
-      select: { deliveryCodeId: true, status: true },
+      include: { items: true },
     });
 
     if (!order) {
@@ -52,23 +47,43 @@ export async function PATCH(
 
     if (order.status !== "SHIPPED") {
       return NextResponse.json(
-        { error: "Only SHIPPED orders can be marked as delivered" },
+        { error: "Only SHIPPED orders can be fully returned" },
         { status: 400 }
       );
     }
 
-    // Update status to DELIVERED and set payment status
-    await prisma.order.update({
-      where: { id },
-      data: {
-        status: "DELIVERED",
-        paymentStatus,
-      },
+    // Check if any items have already been partially returned
+    // If yes, we can still do a full return by returning the remaining quantities.
+    // We'll set returnedQuantity = quantity for each item.
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of order.items) {
+        const alreadyReturned = item.returnedQuantity;
+        const toReturn = item.quantity - alreadyReturned;
+        if (toReturn > 0) {
+          await tx.orderItem.update({
+            where: { id: item.id },
+            data: {
+              returnedQuantity: { increment: toReturn },
+            },
+          });
+          await tx.stock.update({
+            where: { productId: item.productId },
+            data: { quantity: { increment: toReturn } },
+          });
+        }
+      }
+
+      // Update order status to RETURNED
+      await tx.order.update({
+        where: { id },
+        data: { status: "RETURNED" },
+      });
     });
 
-    return NextResponse.json({ message: "Order marked as delivered" });
+    return NextResponse.json({ message: "Order fully returned" });
   } catch (error) {
-    console.error("Error marking order delivered:", error);
+    console.error("Error in full return:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

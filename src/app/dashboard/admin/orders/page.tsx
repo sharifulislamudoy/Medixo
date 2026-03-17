@@ -10,6 +10,7 @@ import ViewOrderModal from '@/components/admin/ViewOrderModal';
 import EditOrderModal from '@/components/admin/EditOrderModal';
 import StatusModal from '@/components/admin/StatusModal';
 import DeleteOrderModal from '@/components/admin/DeleteOrderModal';
+import ReturnedItemsModal from '@/components/admin/ReturnedItemsModal';
 
 interface Order {
   id: string;
@@ -23,7 +24,7 @@ interface Order {
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: 'DUE' | 'PAID';
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'| 'CANCELLED';
   items: OrderItem[];
   deliveryCode?: { code: string } | null;
 }
@@ -36,6 +37,7 @@ interface OrderItem {
     image: string;
     sku: string;
   };
+  returnedQuantity: number;
   quantity: number;
   price: number;
 }
@@ -55,6 +57,9 @@ export default function AdminOrdersPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnedItems, setReturnedItems] = useState<any[]>([]);
+  const [loadingReturns, setLoadingReturns] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -141,6 +146,24 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleViewReturns = async (orderId: string) => {
+    setLoadingReturns(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/returns`);
+      const data = await res.json();
+      if (res.ok) {
+        setReturnedItems(data.returnedItems);
+        setReturnModalOpen(true);
+      } else {
+        toast.error("Failed to load returned items");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setLoadingReturns(false);
+    }
+  };
+
   const rowVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
@@ -171,61 +194,64 @@ export default function AdminOrdersPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setStatusFilter('ALL')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'ALL'
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'ALL'
+              ? 'bg-gray-800 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
           >
             All
           </button>
           <button
             onClick={() => setStatusFilter('PENDING')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'PENDING'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PENDING'
+              ? 'bg-yellow-500 text-white'
+              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+              }`}
           >
             Pending
           </button>
           <button
             onClick={() => setStatusFilter('PROCESSING')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'PROCESSING'
-                ? 'bg-blue-500 text-white'
-                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PROCESSING'
+              ? 'bg-blue-500 text-white'
+              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+              }`}
           >
             Processing
           </button>
           <button
             onClick={() => setStatusFilter('SHIPPED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'SHIPPED'
-                ? 'bg-purple-500 text-white'
-                : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'SHIPPED'
+              ? 'bg-purple-500 text-white'
+              : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+              }`}
           >
             Shipped
           </button>
           <button
             onClick={() => setStatusFilter('DELIVERED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'DELIVERED'
-                ? 'bg-green-500 text-white'
-                : 'bg-green-100 text-green-800 hover:bg-green-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'DELIVERED'
+              ? 'bg-green-500 text-white'
+              : 'bg-green-100 text-green-800 hover:bg-green-200'
+              }`}
           >
             Delivered
           </button>
           <button
+            onClick={() => setStatusFilter('RETURNED')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'CANCELLED'
+              ? 'bg-purple-500 text-white'
+              : 'bg-purple-100 text-red-800 hover:bg-red-200'
+              }`}
+          >
+            Returned
+          </button>
+          <button
             onClick={() => setStatusFilter('CANCELLED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              statusFilter === 'CANCELLED'
-                ? 'bg-red-500 text-white'
-                : 'bg-red-100 text-red-800 hover:bg-red-200'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'CANCELLED'
+              ? 'bg-red-500 text-white'
+              : 'bg-red-100 text-red-800 hover:bg-red-200'
+              }`}
           >
             Cancelled
           </button>
@@ -251,6 +277,7 @@ export default function AdminOrdersPage() {
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Due</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Delivery No</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Returns</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -290,20 +317,31 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          order.status === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : order.status === 'PROCESSING'
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'PENDING'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : order.status === 'PROCESSING'
                             ? 'bg-blue-100 text-blue-800'
                             : order.status === 'SHIPPED'
-                            ? 'bg-purple-100 text-purple-800'
-                            : order.status === 'DELIVERED'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+                              ? 'bg-purple-100 text-purple-800'
+                              : order.status === 'DELIVERED'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                          }`}
                       >
                         {order.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {order.items.some((item) => item.returnedQuantity > 0) ? (
+                        <button
+                          onClick={() => handleViewReturns(order.id)}
+                          className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                        >
+                          {order.items.reduce((sum, item) => sum + item.returnedQuantity, 0)} items
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 relative">
                       <button
@@ -390,6 +428,13 @@ export default function AdminOrdersPage() {
         onConfirm={handleDeleteConfirm}
         invoiceNo={selectedOrder?.invoiceNo || ''}
         loading={deleting}
+      />
+
+      <ReturnedItemsModal
+        isOpen={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        items={returnedItems}
+        loading={loadingReturns}
       />
     </motion.div>
   );

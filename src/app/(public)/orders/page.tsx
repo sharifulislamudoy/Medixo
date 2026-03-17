@@ -50,22 +50,35 @@ export default async function DeliveryBoyOrdersPage() {
       invoiceNo: true,
       orderDate: true,
       customerName: true,
+      customerShopName: true,
       customerPhone: true,
-      customerAddress: true,
       totalAmount: true,
       status: true,
     },
   });
 
-  // Convert Date objects to strings to match client component prop type
+  // Convert Date objects to strings
   const orders = rawOrders.map((order) => ({
     ...order,
     orderDate: order.orderDate.toISOString(),
   }));
 
+  const today = new Date().toLocaleDateString("en-BD", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">My Deliveries</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">My Deliveries</h1>
+        <div className="text-left sm:text-right">
+          <p className="text-lg font-medium text-gray-600">{today}</p>
+          <p className="text-sm text-gray-500">Total Orders: {orders.length}</p>
+        </div>
+      </div>
       <DeliveryBoyOrdersClient initialOrders={orders} />
     </div>
   );
