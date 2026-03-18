@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+// Define return type for the transaction
+interface ProcessResult {
+  updatedCount: number;
+  mergedCount: number;
+}
 
 export async function POST(req: Request) {
   try {
@@ -17,8 +24,8 @@ export async function POST(req: Request) {
 
     const cutoffDate = new Date(cutoff);
 
-    // Increase transaction timeout to 20 seconds
-    const result = await prisma.$transaction(
+    // Increase transaction timeout to 30 seconds
+    const result = await prisma.$transaction<ProcessResult>(
       async (tx) => {
         // 1. Find all PENDING orders placed before cutoff
         const pendingOrders = await tx.order.findMany({
@@ -46,26 +53,81 @@ export async function POST(req: Request) {
             items: {
               include: {
                 product: {
-                  select: { id: true, name: true }, // only for logging
+                  select: { id: true, name: true },
                 },
               },
             },
           },
         });
 
-        // 4. Merge orders per customer (by phone)
-        const mergedCount = await mergeProcessingOrders(tx, processingOrders);
+        // 4. Merge orders per customer (by phone) and collect updated target order IDs
+        const { mergedCount, updatedTargetIds } = await mergeProcessingOrders(tx, processingOrders);
+
+        // 5. Apply cancellation (≤500) and discount (>4000) to all orders that are now in PROCESSING
+        //    and were affected by this run (i.e., their IDs are in updatedTargetIds or were originally pending)
+        const affectedOrderIds = [...new Set([...updatedTargetIds, ...pendingIds])];
+        const ordersToProcess = await tx.order.findMany({
+          where: {
+            id: { in: affectedOrderIds },
+            status: 'PROCESSING', // only those still PROCESSING (some may have been cancelled inside merge)
+          },
+          include: { items: true },
+        });
+
+        for (const order of ordersToProcess) {
+          // Calculate total from items (should match order.totalAmount, but recalc to be safe)
+          const itemsTotal = order.items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+          );
+
+          // Only apply rules if discount hasn't been applied yet (discountAmount === 0)
+          // This prevents re‑applying on subsequent runs
+          if (order.discountAmount === 0) {
+            if (itemsTotal <= 500) {
+              // Cancel order
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  status: 'CANCELLED',
+                  originalTotal: itemsTotal,
+                  discountAmount: 0,
+                },
+              });
+            } else if (itemsTotal > 4000) {
+              // Apply 1% discount
+              const discount = itemsTotal * 0.01;
+              const finalTotal = itemsTotal - discount;
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  originalTotal: itemsTotal,
+                  discountAmount: discount,
+                  totalAmount: finalTotal,
+                },
+              });
+            } else {
+              // No discount, just store original total
+              await tx.order.update({
+                where: { id: order.id },
+                data: {
+                  originalTotal: itemsTotal,
+                },
+              });
+            }
+          }
+        }
 
         return {
           updatedCount: pendingIds.length,
           mergedCount,
         };
       },
-      { timeout: 20000 } // 20 seconds
+      { timeout: 30000 } // 30 seconds
     );
 
     return NextResponse.json({
-      message: 'Orders processed and merged',
+      message: 'Orders processed, merged, and rules applied',
       count: result.updatedCount,
       merged: result.mergedCount,
     });
@@ -77,9 +139,12 @@ export async function POST(req: Request) {
 
 /**
  * Optimised merge: uses a Map for fast item lookups, batches total amount updates,
- * and deletes source orders in bulk.
+ * and deletes source orders in bulk. Returns the IDs of target orders that were updated.
  */
-async function mergeProcessingOrders(tx: any, orders: any[]) {
+async function mergeProcessingOrders(
+  tx: Prisma.TransactionClient,
+  orders: any[]
+): Promise<{ mergedCount: number; updatedTargetIds: string[] }> {
   // Group by customerPhone
   const groups = new Map<string, any[]>();
   for (const order of orders) {
@@ -89,6 +154,7 @@ async function mergeProcessingOrders(tx: any, orders: any[]) {
   }
 
   let mergedCount = 0;
+  const updatedTargetIds: string[] = [];
 
   for (const [phone, group] of groups.entries()) {
     if (group.length <= 1) continue;
@@ -158,7 +224,6 @@ async function mergeProcessingOrders(tx: any, orders: any[]) {
           });
         }
 
-        // Accumulate the total amount contributed by this source item
         totalAmountToAdd += sourceItem.price * sourceItem.quantity;
       }
 
@@ -180,8 +245,9 @@ async function mergeProcessingOrders(tx: any, orders: any[]) {
         where: { id: { in: sourceIdsToDelete } },
       });
       mergedCount += sourceIdsToDelete.length;
+      updatedTargetIds.push(target.id); // target was updated
     }
   }
 
-  return mergedCount;
+  return { mergedCount, updatedTargetIds };
 }

@@ -148,6 +148,8 @@ model Order {
   paymentStatus    PaymentStatus @default(DUE)
   status           OrderStatus   @default(PENDING)
   totalAmount      Float
+  originalTotal    Float?        // sum of items before discount (null if never processed by cutoff)
+  discountAmount   Float         @default(0)
   userId           String
   user             User          @relation(fields: [userId], references: [id])
   items            OrderItem[]

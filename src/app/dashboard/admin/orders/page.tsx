@@ -22,9 +22,11 @@ interface Order {
   customerAddress: string;
   customerPhone: string;
   totalAmount: number;
+  originalTotal?: number | null;
+  discountAmount?: number;
   paymentMethod: string;
   paymentStatus: 'DUE' | 'PAID';
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'| 'CANCELLED';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
   items: OrderItem[];
   deliveryCode?: { code: string } | null;
 }
@@ -60,6 +62,9 @@ export default function AdminOrdersPage() {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnedItems, setReturnedItems] = useState<any[]>([]);
   const [loadingReturns, setLoadingReturns] = useState(false);
+
+  // Selection state
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -104,7 +109,28 @@ export default function AdminOrdersPage() {
         return matchesSearch && matchesStatus;
       })
     );
+    // Clear selection when filter changes (optional)
+    setSelectedOrders(new Set());
   }, [search, orders, statusFilter]);
+
+  // Selection handlers
+  const toggleSelectAll = () => {
+    if (selectedOrders.size === filtered.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(filtered.map((o) => o.id)));
+    }
+  };
+
+  const toggleSelectOrder = (id: string) => {
+    const newSet = new Set(selectedOrders);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedOrders(newSet);
+  };
 
   const handleView = (order: Order) => {
     setSelectedOrder(order);
@@ -155,10 +181,10 @@ export default function AdminOrdersPage() {
         setReturnedItems(data.returnedItems);
         setReturnModalOpen(true);
       } else {
-        toast.error("Failed to load returned items");
+        toast.error('Failed to load returned items');
       }
     } catch (error) {
-      toast.error("An error occurred");
+      toast.error('An error occurred');
     } finally {
       setLoadingReturns(false);
     }
@@ -195,8 +221,8 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('ALL')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'ALL'
-              ? 'bg-gray-800 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >
             All
@@ -204,8 +230,8 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('PENDING')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PENDING'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
               }`}
           >
             Pending
@@ -213,8 +239,8 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('PROCESSING')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PROCESSING'
-              ? 'bg-blue-500 text-white'
-              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                ? 'bg-blue-500 text-white'
+                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
               }`}
           >
             Processing
@@ -222,8 +248,8 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('SHIPPED')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'SHIPPED'
-              ? 'bg-purple-500 text-white'
-              : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                ? 'bg-purple-500 text-white'
+                : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
               }`}
           >
             Shipped
@@ -231,17 +257,17 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('DELIVERED')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'DELIVERED'
-              ? 'bg-green-500 text-white'
-              : 'bg-green-100 text-green-800 hover:bg-green-200'
+                ? 'bg-green-500 text-white'
+                : 'bg-green-100 text-green-800 hover:bg-green-200'
               }`}
           >
             Delivered
           </button>
           <button
             onClick={() => setStatusFilter('RETURNED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'CANCELLED'
-              ? 'bg-purple-500 text-white'
-              : 'bg-purple-100 text-red-800 hover:bg-red-200'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'RETURNED'
+                ? 'bg-orange-500 text-white'
+                : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
               }`}
           >
             Returned
@@ -249,8 +275,8 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setStatusFilter('CANCELLED')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'CANCELLED'
-              ? 'bg-red-500 text-white'
-              : 'bg-red-100 text-red-800 hover:bg-red-200'
+                ? 'bg-red-500 text-white'
+                : 'bg-red-100 text-red-800 hover:bg-red-200'
               }`}
           >
             Cancelled
@@ -261,14 +287,23 @@ export default function AdminOrdersPage() {
           placeholder="Search by invoice, customer, phone, delivery code..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black  w-100"
+          className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black w-100"
         />
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[1300px]">
+        <table className="w-full min-w-[1400px]">
           <thead className="bg-gray-100 border-b">
             <tr>
+              {/* Checkbox column */}
+              <th className="px-4 py-3 text-left">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && selectedOrders.size === filtered.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
+                />
+              </th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Invoice</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Order Time</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Customer Info</th>
@@ -277,7 +312,6 @@ export default function AdminOrdersPage() {
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Due</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Delivery No</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Returns</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -289,6 +323,9 @@ export default function AdminOrdersPage() {
                 const orderDateObj = new Date(order.orderDate);
                 const orderDate = orderDateObj.toLocaleDateString();
                 const orderTime = orderDateObj.toLocaleTimeString();
+                const discount = order.discountAmount || 0;
+                const originalTotal = order.originalTotal || order.totalAmount;
+
                 return (
                   <motion.tr
                     key={order.id}
@@ -300,8 +337,21 @@ export default function AdminOrdersPage() {
                     layout
                     className="hover:bg-gray-50"
                   >
+                    {/* Checkbox */}
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.has(order.id)}
+                        onChange={() => toggleSelectOrder(order.id)}
+                        className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{order.invoiceNo}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600"><span>{orderDate}</span><br /><span>{orderTime}</span></td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      <span>{orderDate}</span>
+                      <br />
+                      <span>{orderTime}</span>
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       <div className="space-y-1">
                         {order.customerShopName && <div className="font-bold">{order.customerShopName}</div>}
@@ -318,36 +368,36 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : order.status === 'PROCESSING'
-                            ? 'bg-blue-100 text-blue-800'
-                            : order.status === 'SHIPPED'
-                              ? 'bg-purple-100 text-purple-800'
-                              : order.status === 'DELIVERED'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : order.status === 'PROCESSING'
+                              ? 'bg-blue-100 text-blue-800'
+                              : order.status === 'SHIPPED'
+                                ? 'bg-purple-100 text-purple-800'
+                                : order.status === 'DELIVERED'
+                                  ? 'bg-green-100 text-green-800'
+                                  : order.status === 'RETURNED'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-red-100 text-red-800'
                           }`}
                       >
                         {order.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.items.some((item) => item.returnedQuantity > 0) ? (
-                        <button
-                          onClick={() => handleViewReturns(order.id)}
-                          className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                        >
-                          {order.items.reduce((sum, item) => sum + item.returnedQuantity, 0)} items
-                        </button>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
+                      <div className='mt-2'>
+                        {order.items.some((item) => item.returnedQuantity > 0) ? (
+                          <button
+                            onClick={() => handleViewReturns(order.id)}
+                            className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                          >
+                            {order.items.reduce((sum, item) => sum + item.returnedQuantity, 0)} items
+                          </button>
+                        ) : (
+                          <span className="text-gray-400"></span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 relative">
                       <button
-                        onClick={() =>
-                          setActiveDropdown(activeDropdown === order.id ? null : order.id)
-                        }
+                        onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                         className="bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white p-1 rounded-full hover:opacity-90 transition"
                       >
                         <MoreVertical size={18} />
