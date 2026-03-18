@@ -14,7 +14,6 @@ import {
   ShoppingBag,
   Heart,
   History,
-  Target,
   Wallet,
   ClipboardList,
   LogOut,
@@ -22,6 +21,9 @@ import {
   Search,
   Menu,
   X,
+  LucideLoader2,
+  LucideLoader,
+  Target,
 } from "lucide-react";
 
 // Simple product type for search results
@@ -72,9 +74,9 @@ export default function Navbar() {
   // Navigation items for delivery boy (used in bottom nav and desktop dropdown)
   const deliveryBoyNavItems = [
     { name: "Orders", href: "/orders", icon: ClipboardList },
-    { name: "Target", href: "/target", icon: Target },
+    { name: "Leaderboard", href: "/delivery-boy-leaderboard", icon: Target },
     { name: "Cash", href: "/cash", icon: Wallet },
-    { name: "History", href: "/history", icon: History },
+    { name: "History", href: "/delivery-boy-history", icon: History },
   ];
 
   // Determine which set of items to show in the desktop dropdown based on role
