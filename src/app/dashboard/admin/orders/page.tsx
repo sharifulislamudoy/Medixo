@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreVertical, Eye, Edit, Tag, Trash2 } from 'lucide-react';
+import { MoreVertical, Eye, Edit, Tag, Trash2, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ViewOrderModal from '@/components/admin/ViewOrderModal';
 import EditOrderModal from '@/components/admin/EditOrderModal';
 import StatusModal from '@/components/admin/StatusModal';
 import DeleteOrderModal from '@/components/admin/DeleteOrderModal';
 import ReturnedItemsModal from '@/components/admin/ReturnedItemsModal';
+import CustomerOrdersModal from '@/components/admin/CustomerOrdersModal'; // new import
 
 interface Order {
   id: string;
@@ -63,6 +64,10 @@ export default function AdminOrdersPage() {
   const [returnedItems, setReturnedItems] = useState<any[]>([]);
   const [loadingReturns, setLoadingReturns] = useState(false);
 
+  // New state for customer orders modal
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+
   // Selection state
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
@@ -109,7 +114,6 @@ export default function AdminOrdersPage() {
         return matchesSearch && matchesStatus;
       })
     );
-    // Clear selection when filter changes (optional)
     setSelectedOrders(new Set());
   }, [search, orders, statusFilter]);
 
@@ -188,6 +192,11 @@ export default function AdminOrdersPage() {
     } finally {
       setLoadingReturns(false);
     }
+  };
+
+  const handleCustomerClick = (phone: string) => {
+    setSelectedPhone(phone);
+    setCustomerModalOpen(true);
   };
 
   const rowVariants = {
@@ -295,7 +304,6 @@ export default function AdminOrdersPage() {
         <table className="w-full min-w-[1400px]">
           <thead className="bg-gray-100 border-b">
             <tr>
-              {/* Checkbox column */}
               <th className="px-4 py-3 text-left">
                 <input
                   type="checkbox"
@@ -337,7 +345,6 @@ export default function AdminOrdersPage() {
                     layout
                     className="hover:bg-gray-50"
                   >
-                    {/* Checkbox */}
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -356,7 +363,16 @@ export default function AdminOrdersPage() {
                       <div className="space-y-1">
                         {order.customerShopName && <div className="font-bold">{order.customerShopName}</div>}
                         <div>{order.customerName}</div>
-                        <div className="text-xs text-gray-500">{order.customerPhone}</div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">{order.customerPhone}</span>
+                          <button
+                            onClick={() => handleCustomerClick(order.customerPhone)}
+                            className="text-gray-400 hover:text-[#0F9D8F] transition"
+                            title="View customer orders"
+                          >
+                            <Info size={14} />
+                          </button>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-[#0F9D8F]">৳{order.totalAmount.toFixed(2)}</td>
@@ -367,18 +383,19 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'PENDING'
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          order.status === 'PENDING'
                             ? 'bg-yellow-100 text-yellow-800'
                             : order.status === 'PROCESSING'
-                              ? 'bg-blue-100 text-blue-800'
-                              : order.status === 'SHIPPED'
-                                ? 'bg-purple-100 text-purple-800'
-                                : order.status === 'DELIVERED'
-                                  ? 'bg-green-100 text-green-800'
-                                  : order.status === 'RETURNED'
-                                    ? 'bg-orange-100 text-orange-800'
-                                    : 'bg-red-100 text-red-800'
-                          }`}
+                            ? 'bg-blue-100 text-blue-800'
+                            : order.status === 'SHIPPED'
+                            ? 'bg-purple-100 text-purple-800'
+                            : order.status === 'DELIVERED'
+                            ? 'bg-green-100 text-green-800'
+                            : order.status === 'RETURNED'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
                       >
                         {order.status}
                       </span>
@@ -479,12 +496,16 @@ export default function AdminOrdersPage() {
         invoiceNo={selectedOrder?.invoiceNo || ''}
         loading={deleting}
       />
-
       <ReturnedItemsModal
         isOpen={returnModalOpen}
         onClose={() => setReturnModalOpen(false)}
         items={returnedItems}
         loading={loadingReturns}
+      />
+      <CustomerOrdersModal
+        isOpen={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        phone={selectedPhone}
       />
     </motion.div>
   );
