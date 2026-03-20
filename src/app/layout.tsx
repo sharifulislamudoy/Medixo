@@ -3,6 +3,7 @@ import "./globals.css";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { Toaster } from "react-hot-toast";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
+import InitialLoader from "@/components/InitialLoader";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.medimart.com'), // Replace with your domain
@@ -87,8 +88,10 @@ export default function RootLayout({
         cz-shortcut-listen="true">
         <SessionProviderWrapper>
           <CartProviderWrapper>
-            {children}
-            <Toaster position="top-right" />
+            <InitialLoader>
+              {children}
+              <Toaster position="top-right" />
+            </InitialLoader>
           </CartProviderWrapper>
         </SessionProviderWrapper>
       </body>
