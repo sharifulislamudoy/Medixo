@@ -21,8 +21,8 @@ import {
   Search,
   Menu,
   X,
-  LucideLoader2,
-  LucideLoader,
+  Download,
+  XCircle,
   Target,
 } from "lucide-react";
 
@@ -47,6 +47,13 @@ export default function Navbar() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
+  // PWA installation state
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,7 +70,7 @@ export default function Navbar() {
   const dashboardRoute =
     roleRouteMap[session?.user?.role as string] || "/dashboard";
 
-  // Navigation items for logged-in users (used in desktop dropdown and bottom nav for customers)
+  // Navigation items for logged-in users
   const loggedInNavItems = [
     { name: "Products", href: "/products", icon: Package },
     { name: "Bag", href: "/bag", icon: ShoppingBag },
@@ -71,7 +78,6 @@ export default function Navbar() {
     { name: "History", href: "/history", icon: History },
   ];
 
-  // Navigation items for delivery boy (used in bottom nav and desktop dropdown)
   const deliveryBoyNavItems = [
     { name: "Orders", href: "/orders", icon: ClipboardList },
     { name: "Leaderboard", href: "/delivery-boy-leaderboard", icon: Target },
@@ -79,7 +85,6 @@ export default function Navbar() {
     { name: "History", href: "/delivery-boy-history", icon: History },
   ];
 
-  // Determine which set of items to show in the desktop dropdown based on role
   const dropdownNavItems =
     session?.user?.role === "DELIVERY_BOY"
       ? deliveryBoyNavItems
@@ -162,6 +167,67 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
+  // Detect iOS and check standalone mode
+  useEffect(() => {
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
+    // Check if app is already installed (standalone mode)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone) {
+      setIsAppInstalled(true);
+      setIsInstallable(false);
+    }
+
+    // Listen for beforeinstallprompt (Android/Chrome)
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      if (!isAppInstalled) {
+        setIsInstallable(true);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Listen for display mode changes
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const handleDisplayModeChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsAppInstalled(true);
+        setIsInstallable(false);
+      }
+    };
+    mediaQuery.addEventListener('change', handleDisplayModeChange);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      mediaQuery.removeEventListener('change', handleDisplayModeChange);
+    };
+  }, [isAppInstalled]);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+      }
+    } else if (isIOS) {
+      setShowIOSModal(true);
+    }
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
@@ -228,7 +294,6 @@ export default function Navbar() {
           <div className="flex items-center justify-between gap-4">
             {/* Left: Hamburger (mobile) + Logo */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Hamburger Menu Button (visible only on mobile) */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={toggleMenu}
@@ -242,7 +307,6 @@ export default function Navbar() {
                 )}
               </motion.button>
 
-              {/* Logo + Brand Name */}
               <Link
                 href="/"
                 className="flex items-center gap-2 flex-shrink-0 group"
@@ -271,7 +335,6 @@ export default function Navbar() {
 
             {/* Center: Desktop Navigation + Search (md+) */}
             <div className="hidden md:flex items-center flex-1 justify-center gap-4">
-              {/* Desktop Navigation Links */}
               <div className="flex items-center space-x-1">
                 {["Products", "Services", "About", "Contact"].map(
                   (item, index) => (
@@ -293,7 +356,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Search Bar for md+ */}
               <div className="relative max-w-xs w-full" ref={searchRef}>
                 <input
                   type="text"
@@ -307,8 +369,22 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Right: Login Button OR User Avatar Circle */}
+            {/* Right: Download button + Login/Avatar */}
             <div className="flex items-center gap-3 flex-shrink-0">
+              {/* PWA Install Button */}
+              {!isAppInstalled && isInstallable && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleInstall}
+                  className="relative group bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 flex items-center gap-2 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+                  <Download className="h-5 w-5 relative z-10" />
+                  <span className="relative z-10 hidden sm:inline">Download</span>
+                </motion.button>
+              )}
+
               {status === "loading" ? (
                 <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse" />
               ) : session ? (
@@ -323,7 +399,6 @@ export default function Navbar() {
                     {userInitial}
                   </motion.button>
 
-                  {/* Dropdown Menu */}
                   <AnimatePresence>
                     {isDropdownOpen && (
                       <motion.div
@@ -344,7 +419,6 @@ export default function Navbar() {
 
                         {!isMobile ? (
                           <>
-                            {/* Role-specific navigation items for desktop */}
                             {dropdownNavItems.map((item) => {
                               const Icon = item.icon;
                               return (
@@ -369,7 +443,6 @@ export default function Navbar() {
                             </Link>
                           </>
                         ) : (
-                          // On mobile, only show Dashboard in the dropdown
                           <>
                             <Link
                               href={dashboardRoute}
@@ -420,7 +493,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Second row: Search bar (only visible on mobile) */}
+        {/* Mobile Search Bar */}
         <div className="block md:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
           <div className="flex justify-center">
             <motion.div
@@ -459,7 +532,7 @@ export default function Navbar() {
                     Searching...
                   </div>
                 ) : (
-                  <ul className="lg:max-h-50 max-h-40 overflow-y-auto ">
+                  <ul className="lg:max-h-50 max-h-40 overflow-y-auto">
                     {searchResults.map((product) => (
                       <li key={product.id}>
                         <button
@@ -532,6 +605,51 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
+      {/* iOS Installation Modal */}
+      <AnimatePresence>
+        {showIOSModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowIOSModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Install Medi Mart</h3>
+                <button
+                  onClick={() => setShowIOSModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+              <p className="text-gray-600 mb-4">
+                To install this app on your iPhone/iPad, follow these steps:
+              </p>
+              <ol className="list-decimal list-inside space-y-2 text-gray-700 mb-6">
+                <li>Tap the <span className="inline-flex items-center bg-gray-100 px-2 py-1 rounded">Share</span> icon at the bottom of the screen</li>
+                <li>Scroll down and tap <span className="font-semibold">Add to Home Screen</span></li>
+                <li>Tap <span className="font-semibold">Add</span> in the top right corner</li>
+              </ol>
+              <button
+                onClick={() => setShowIOSModal(false)}
+                className="w-full bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+              >
+                Got it
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Bottom Navigation for Mobile (visible only when logged in) */}
       {session && isMobile && (
         <motion.div
@@ -542,7 +660,6 @@ export default function Navbar() {
         >
           <div className="flex justify-around items-center py-2">
             {session.user.role === "DELIVERY_BOY" ? (
-              // Delivery Boy items
               deliveryBoyNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -557,7 +674,6 @@ export default function Navbar() {
                 );
               })
             ) : (
-              // All other roles (ADMIN, SHOP_OWNER, SUPPLIER)
               <>
                 <Link
                   href="/"

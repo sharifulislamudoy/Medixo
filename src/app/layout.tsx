@@ -80,6 +80,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         cz-shortcut-listen="true">
         <SessionProviderWrapper>
