@@ -721,7 +721,7 @@ export default function Navbar() {
           transition={{ duration: 0.3 }}
           className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden"
         >
-          <div className="flex justify-around items-center py-2">
+          <div className="flex justify-around items-center py-1">
             {isDeliveryBoy ? (
               deliveryBoyNavItems.map((item) => {
                 const Icon = item.icon;
