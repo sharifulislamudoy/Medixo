@@ -24,6 +24,7 @@
     "react": "19.2.3",
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3",
+    "react-fast-marquee": "^1.6.5",
     "react-hot-toast": "^2.6.0",
     "swiper": "^12.1.2"
   },

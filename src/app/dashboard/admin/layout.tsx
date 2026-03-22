@@ -20,6 +20,7 @@ export default function AdminLayout({
     { name: "Orders", href: "/dashboard/admin/orders" },
     { name: "Delivery Route", href: "/dashboard/admin/delivery-route" },
     { name: "Shipment", href: "/dashboard/admin/delivery-shipment" },
+    { name: "Announcement", href: "/dashboard/admin/marquee" },
     
   ];
 

@@ -1,3 +1,4 @@
+import MarqueeSection from "@/components/MarqueeSection";
 import Navbar from "@/components/Navbar";
 
 export default function PublicLayout({
@@ -7,6 +8,7 @@ export default function PublicLayout({
 }) {
   return (
     <>
+      <MarqueeSection />
       <Navbar />
       {children}
     </>
