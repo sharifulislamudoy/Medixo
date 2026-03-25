@@ -6,32 +6,32 @@ import CartProviderWrapper from "@/components/CartProviderWrapper";
 import InitialLoader from "@/components/InitialLoader";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.medimart.com'), // Replace with your domain
+  metadataBase: new URL('https://medi-murt-next-js-h55k.vercel.app'), // Replace with your domain
   title: {
-    default: 'Medi Mart - B2B Pharmaceutical Marketplace',
+    default: 'Medi Mart',
     template: '%s | Medi Mart'
   },
   description: 'Bangladesh’s leading B2B wholesale medicine marketplace. Shop owners can purchase pharmaceuticals at the best prices with easy delivery and secure payment.',
   keywords: ['wholesale medicine', 'B2B pharmaceutical', 'medicine supplier', 'pharmacy supply', 'drug trading'],
-  authors: [{ name: 'Medi Mart Team' }],
-  creator: 'Medi Mart',
-  publisher: 'Medi Mart',
+  authors: [{ name: 'Shariful Islam Udoy' }],
+  creator: 'Shariful Islam Udoy',
+  publisher: 'Shariful Islam Udoy',
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: 'Medi Mart - B2B Pharmaceutical Marketplace',
+    title: 'Medi Mart',
     description: 'The most reliable platform for shop owners to buy medicines at competitive prices.',
-    url: 'https://www.medimart.com',
+    url: 'https://medi-murt-next-js-h55k.vercel.app',
     siteName: 'Medi Mart',
     images: [
       {
-        url: 'https://www.medimart.com/og-image.jpg', // Your OG image URL
+        url: 'https://medi-murt-next-js-h55k.vercel.app/og-image.jpg', // Your OG image URL
         width: 1200,
         height: 630,
-        alt: 'Medi Mart - B2B Pharmaceutical Marketplace',
+        alt: 'Medi Mart',
       },
     ],
     locale: 'en_US',
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Medi Mart - B2B Pharmaceutical Marketplace',
+    title: 'Medi Mart',
     description: 'Shop owners can buy medicines at wholesale prices.',
-    images: ['https://www.medimart.com/twitter-image.jpg'],
+    images: ['https://medi-murt-next-js-h55k.vercel.app/og-image.jpg'],
   },
   robots: {
     index: true,
@@ -59,16 +59,16 @@ export const metadata: Metadata = {
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png',
   },
-  manifest: '/site.webmanifest',
+  manifest: '/manifest.json',
   verification: {
     google: 'your-google-search-console-verification-code',
     // Add other verification codes if needed
   },
   alternates: {
-    canonical: 'https://www.medimart.com',
+    canonical: 'https://medi-murt-next-js-h55k.vercel.app',
     languages: {
-      'en-US': 'https://www.medimart.com/en',
-      'bn-BD': 'https://www.medimart.com/bn', // If you have a Bengali version
+      'en-US': 'https://medi-murt-next-js-h55k.vercel.app/en',
+      'bn-BD': 'https://medi-murt-next-js-h55k.vercel.app/bn', // If you have a Bengali version
     },
   },
   category: 'Business',
@@ -83,6 +83,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <meta name="google-site-verification" content="mnxa3sKPJ91f6rAGqbXyyIZYDSJBR1H8s_06QAASItM" />
       </head>
       <body
         cz-shortcut-listen="true">
