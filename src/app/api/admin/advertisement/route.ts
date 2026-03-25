@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sendNotificationToAllUsers } from "@/lib/send-notification";
 
 // GET all advertisements (Admin only)
 export async function GET() {
@@ -21,13 +22,11 @@ export async function GET() {
 // CREATE advertisement
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await req.json();
-
   const { title, imageUrl, category, hyperlink, isVisible } = body;
 
   if (!title || !imageUrl || !category) {
@@ -46,6 +45,13 @@ export async function POST(req: Request) {
       isVisible,
     },
   });
+
+  // Send push notification to all users
+  await sendNotificationToAllUsers(
+    "New Advertisement",
+    `Check out: ${title}`,
+    { adId: ad.id, category } // optional data
+  );
 
   return NextResponse.json(ad);
 }
