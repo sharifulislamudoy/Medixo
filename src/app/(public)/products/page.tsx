@@ -191,7 +191,7 @@ export default function ProductsPage() {
             {/* Products Display */}
             {viewMode === "card" ? (
                 /* ---------- CARD VIEW ---------- */
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                     {isLoading ? (
                         Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
                     ) : (
@@ -213,8 +213,8 @@ export default function ProductsPage() {
                                         onClick={() => router.push(`/products/${product.id}`)}
                                     >
                                         {/* Entire card is clickable except the button area */}
-                                        <div>
-                                            <div className="relative h-48 w-full">
+                                        <div className="flex md:flex-col">
+                                            <div className="relative h-40 w-1/3 md:w-full">
                                                 <Image
                                                     src={product.image}
                                                     alt={product.name}
@@ -498,8 +498,8 @@ export default function ProductsPage() {
                                                     className="hover:bg-gray-50 cursor-pointer"
                                                     onClick={() => router.push(`/products/${product.id}`)}
                                                 >
-                                                    <td className="px-4 py-4">
-                                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden">
+                                                    <td className="px-4 py-4 w-1/4">
+                                                        <div className="relative w-full h-25 rounded-lg overflow-hidden">
                                                             <Image src={product.image} alt={product.name} fill className="object-cover" />
                                                             {discount > 0 && (
                                                                 <div className="absolute top-0 left-0 bg-red-500 text-white text-[10px] px-1 rounded-br-lg">
@@ -508,7 +508,7 @@ export default function ProductsPage() {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-4">
+                                                    <td className="pl-2 py-4">
                                                         <div className="space-y-1">
                                                             <div className="font-medium text-gray-900">
                                                                 {product.name}
