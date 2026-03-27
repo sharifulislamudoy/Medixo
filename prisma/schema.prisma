@@ -232,7 +232,6 @@ model Procurement {
   id        String            @id @default(cuid())
   prNumber  String            @unique
   createdAt DateTime          @default(now())
-  status    ProcurementStatus @default(PENDING)
   items     ProcurementItem[]
   updatedAt DateTime          @updatedAt
 }
@@ -249,10 +248,4 @@ model ProcurementItem {
   mrp             Float // product.mrp at creation time
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-}
-
-enum ProcurementStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }

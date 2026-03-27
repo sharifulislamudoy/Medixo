@@ -172,7 +172,6 @@ export default function AdminProcurementPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PR Number</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -199,19 +198,6 @@ export default function AdminProcurementPage() {
                     {new Date(proc.createdAt).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{proc.items.length} items</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        proc.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : proc.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {proc.status}
-                    </span>
-                  </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleView(proc)}

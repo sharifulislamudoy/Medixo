@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
       const newProc = await tx.procurement.create({
         data: {
           prNumber,
-          status: "PENDING",
         },
       });
 
