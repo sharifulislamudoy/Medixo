@@ -69,6 +69,7 @@ model User {
   bankAccountNumber String?
   bankBranch        String?
   accountHolderName String?
+  purchases         Purchase[]    
 }
 
 model Advertisement {
@@ -135,7 +136,7 @@ model Product {
   updatedAt        DateTime          @updatedAt
   stock            Stock?
   orderItems       OrderItem[]
-  procurementItems ProcurementItem[]
+  purchaseItems    PurchaseItem[]    
 }
 
 model Stock {
@@ -231,24 +232,31 @@ model Area {
   @@unique([zoneId, code])
 }
 
-model Procurement {
-  id        String            @id @default(cuid())
-  prNumber  String            @unique
-  createdAt DateTime          @default(now())
-  items     ProcurementItem[]
-  updatedAt DateTime          @updatedAt
+model Purchase {
+  id            String         @id @default(cuid())
+  purchaseNo    String         @unique
+  supplierId    String
+  supplier      User           @relation(fields: [supplierId], references: [id])
+  purchaseDate  DateTime       @default(now())
+  paymentStatus PaymentStatus  @default(DUE)
+  totalAmount   Float
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  items         PurchaseItem[]
 }
 
-model ProcurementItem {
-  id              String      @id @default(cuid())
-  procurementId   String
-  procurement     Procurement @relation(fields: [procurementId], references: [id], onDelete: Cascade)
-  productId       String
-  product         Product     @relation(fields: [productId], references: [id])
-  orderedQuantity Int
-  currentStock    Int // snapshot of stock at creation time
-  purchasePrice   Float // product.costPrice at creation time
-  mrp             Float // product.mrp at creation time
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+model PurchaseItem {
+  id           String   @id @default(cuid())
+  purchaseId   String
+  purchase     Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Int
+  costPrice    Float    
+  profitMargin Float    
+  sellPrice    Float    
+  totalCost    Float    
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

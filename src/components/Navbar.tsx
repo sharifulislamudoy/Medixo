@@ -357,7 +357,7 @@ export default function Navbar() {
                 <div className="relative">
                   <Image
                     src="/Logo.png"
-                    alt="Medi Mart Logo"
+                    alt="Medixo Logo"
                     width={120}
                     height={40}
                     className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -371,7 +371,7 @@ export default function Navbar() {
                   />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-[#156A98] to-[#0F9D8F] bg-clip-text text-transparent hidden sm:inline">
-                  Medi Mart
+                  Medixo
                 </span>
               </Link>
             </div>
@@ -686,7 +686,7 @@ export default function Navbar() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Install Medi Mart</h3>
+                <h3 className="text-xl font-bold text-gray-800">Install Medixo</h3>
                 <button
                   onClick={() => setShowIOSModal(false)}
                   className="text-gray-400 hover:text-gray-600"

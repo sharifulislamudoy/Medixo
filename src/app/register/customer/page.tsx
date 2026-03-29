@@ -162,7 +162,7 @@ export default function RegisterPage() {
                 <img src="/Logo.png" alt="" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-[#156A98] to-[#0F9D8F] bg-clip-text text-transparent">
-                Medi Mart
+                Medixo
               </span>
             </motion.div>
             <h2 className="text-2xl font-semibold text-gray-800 mt-4">
@@ -254,7 +254,7 @@ export default function RegisterPage() {
                   type="text"
                   value={form.shopName}
                   onChange={handleChange}
-                  placeholder="Medi Mart"
+                  placeholder="Medixo"
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F9D8F]/50 focus:border-[#0F9D8F] transition-all duration-200 text-black"
                   required
                 />

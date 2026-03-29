@@ -75,10 +75,10 @@ export default function SupplierRegisterPage() {
               className="inline-flex items-center gap-2"
             >
               <div className="w-11 h-11 flex items-center justify-center">
-                <img src="/Logo.png" alt="Medi Mart" />
+                <img src="/Logo.png" alt="Medixo" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-[#156A98] to-[#0F9D8F] bg-clip-text text-transparent">
-                Medi Mart
+                Medixo
               </span>
             </motion.div>
             <h2 className="text-2xl font-semibold text-gray-800 mt-4">

@@ -8,8 +8,8 @@ import InitialLoader from "@/components/InitialLoader";
 export const metadata: Metadata = {
   metadataBase: new URL('https://medi-murt-next-js-h55k.vercel.app'), // Replace with your domain
   title: {
-    default: 'Medi Mart',
-    template: '%s | Medi Mart'
+    default: 'Medixo',
+    template: '%s | Medixo'
   },
   description: 'Bangladesh’s leading B2B wholesale medicine marketplace. Shop owners can purchase pharmaceuticals at the best prices with easy delivery and secure payment.',
   keywords: ['wholesale medicine', 'B2B pharmaceutical', 'medicine supplier', 'pharmacy supply', 'drug trading'],
@@ -22,16 +22,16 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Medi Mart',
+    title: 'Medixo',
     description: 'The most reliable platform for shop owners to buy medicines at competitive prices.',
     url: 'https://medi-murt-next-js-h55k.vercel.app',
-    siteName: 'Medi Mart',
+    siteName: 'Medixo',
     images: [
       {
         url: 'https://medi-murt-next-js-h55k.vercel.app/og-image.jpg', // Your OG image URL
         width: 1200,
         height: 630,
-        alt: 'Medi Mart',
+        alt: 'Medixo',
       },
     ],
     locale: 'en_US',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Medi Mart',
+    title: 'Medixo',
     description: 'Shop owners can buy medicines at wholesale prices.',
     images: ['https://medi-murt-next-js-h55k.vercel.app/og-image.jpg'],
   },
