@@ -23,6 +23,7 @@ interface ProductOption {
   profitMargin: number;
   sellPrice: number;
   stock: number;
+  nextPurchasePrice?: number;
 }
 
 interface PurchaseItem {
@@ -34,6 +35,7 @@ interface PurchaseItem {
   profitMargin: number;
   sellPrice: number;
   totalCost: number;
+  nextPurchasePrice?: number;
 }
 
 export default function EditPurchasePage() {
@@ -103,16 +105,21 @@ export default function EditPurchasePage() {
       setPurchaseDate(data.purchaseDate.split("T")[0]);
       setPaymentStatus(data.paymentStatus);
       setNotes(data.notes || "");
-      const loadedItems = data.items.map((item: any) => ({
-        productId: item.productId,
-        productName: item.product.name,
-        productSku: item.product.sku,
-        quantity: item.quantity,
-        costPrice: item.costPrice,
-        profitMargin: item.profitMargin,
-        sellPrice: item.sellPrice,
-        totalCost: item.totalCost,
-      }));
+      const loadedItems = data.items.map((item: any) => {
+        const product = products.find(p => p.id === item.productId);
+        const nextPurchasePrice = product?.nextPurchasePrice ?? item.product.nextPurchasePrice ?? undefined;
+        return {
+          productId: item.productId,
+          productName: item.product.name,
+          productSku: item.product.sku,
+          quantity: item.quantity,
+          costPrice: item.costPrice,
+          profitMargin: item.profitMargin,
+          sellPrice: item.sellPrice,
+          totalCost: item.totalCost,
+          nextPurchasePrice,
+        };
+      });
       setItems(loadedItems);
     } catch (error) {
       toast.error("Failed to load purchase");
@@ -127,6 +134,11 @@ export default function EditPurchasePage() {
       toast.error("Product already added");
       return;
     }
+    const costPrice = product.nextPurchasePrice ?? product.costPrice;
+    const profitMargin = product.profitMargin;
+    const sellPrice = costPrice * (1 + profitMargin / 100);
+    const nextPurchasePrice = sellPrice * (99 - profitMargin) / 100;
+
     setItems([
       ...items,
       {
@@ -134,10 +146,11 @@ export default function EditPurchasePage() {
         productName: product.name,
         productSku: product.sku,
         quantity: 1,
-        costPrice: product.costPrice,
-        profitMargin: product.profitMargin,
-        sellPrice: product.sellPrice,
-        totalCost: product.costPrice * 1,
+        costPrice,
+        profitMargin,
+        sellPrice,
+        totalCost: costPrice,
+        nextPurchasePrice,
       },
     ]);
     setSearchTerm("");
@@ -156,9 +169,18 @@ export default function EditPurchasePage() {
       updated[index].costPrice = parseFloat(value) || 0;
     } else if (field === "profitMargin") {
       updated[index].profitMargin = parseFloat(value) || 0;
+    } else if (field === "nextPurchasePrice") {
+      updated[index].nextPurchasePrice = parseFloat(value) || undefined;
     }
-    updated[index].sellPrice = updated[index].costPrice * (1 + updated[index].profitMargin / 100);
-    updated[index].totalCost = updated[index].quantity * updated[index].costPrice;
+
+    // Recalculate derived fields
+    const { costPrice, profitMargin } = updated[index];
+    updated[index].sellPrice = costPrice * (1 + profitMargin / 100);
+    updated[index].totalCost = updated[index].quantity * costPrice;
+    // If nextPurchasePrice wasn't manually changed, auto‑update it
+    if (field !== "nextPurchasePrice") {
+      updated[index].nextPurchasePrice = updated[index].sellPrice * (99 - profitMargin) / 100;
+    }
     setItems(updated);
   };
 
@@ -199,6 +221,7 @@ export default function EditPurchasePage() {
             quantity: item.quantity,
             costPrice: item.costPrice,
             profitMargin: item.profitMargin,
+            nextPurchasePrice: item.nextPurchasePrice,
           })),
           updateProductDefaults,
         }),
@@ -335,6 +358,7 @@ export default function EditPurchasePage() {
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Margin %</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Sell (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Total (৳)</th>
+                  <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Next Purchase (৳)</th>
                   <th></th>
                 </tr>
               </thead>
@@ -380,6 +404,17 @@ export default function EditPurchasePage() {
                     </td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.sellPrice.toFixed(2)}</td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.totalCost.toFixed(2)}</td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.nextPurchasePrice ?? ""}
+                        onChange={(e) => updateItem(idx, "nextPurchasePrice", e.target.value)}
+                        className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
+                        placeholder="Auto"
+                      />
+                    </td>
                     <td className="px-2 py-2">
                       <button
                         type="button"

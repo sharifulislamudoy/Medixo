@@ -1,3 +1,5 @@
+// app/api/admin/purchases/[id]/route.ts
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -19,7 +21,19 @@ export async function GET(
       where: { id },
       include: {
         supplier: true,
-        items: { include: { product: true } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                image: true,
+                nextPurchasePrice: true,   // 👈 new
+              },
+            },
+          },
+        },
       },
     });
     if (!purchase) {
@@ -85,7 +99,7 @@ export async function PUT(
 
       // Create new items and update stock & product
       for (const item of items) {
-        const { productId, quantity, costPrice, profitMargin } = item;
+        const { productId, quantity, costPrice, profitMargin, nextPurchasePrice } = item;
         const sellPrice = costPrice * (1 + profitMargin / 100);
         const totalCost = quantity * costPrice;
 
@@ -111,7 +125,12 @@ export async function PUT(
         if (updateProductDefaults === true) {
           await tx.product.update({
             where: { id: productId },
-            data: { costPrice, profitMargin, sellPrice },
+            data: {
+              costPrice,
+              profitMargin,
+              sellPrice,
+              nextPurchasePrice: nextPurchasePrice ?? null,   // 👈 new
+            },
           });
         }
       }

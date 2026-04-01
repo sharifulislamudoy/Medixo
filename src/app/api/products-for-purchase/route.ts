@@ -1,3 +1,5 @@
+// app/api/products-for-purchase/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -22,6 +24,7 @@ export async function GET() {
       sellPrice: p.sellPrice,
       stock: p.stock?.quantity || 0,
       image: p.image,
+      nextPurchasePrice: p.nextPurchasePrice,   // 👈 new
     }));
     return NextResponse.json(mapped);
   } catch (error) {

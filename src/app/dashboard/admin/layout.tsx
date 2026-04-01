@@ -22,7 +22,7 @@ export default function AdminLayout({
     { name: "Shipment", href: "/dashboard/admin/delivery-shipment" },
     { name: "Announcement", href: "/dashboard/admin/marquee" },
     { name: "Delivery Boys", href: "/dashboard/admin/delivery-boy" },
-    { name: "Procurement", href: "/dashboard/admin/procurement" },
+    { name: "Purchases", href: "/dashboard/admin/list-purchases" },
     
   ];
 

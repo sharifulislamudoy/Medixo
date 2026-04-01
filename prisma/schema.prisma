@@ -69,7 +69,7 @@ model User {
   bankAccountNumber String?
   bankBranch        String?
   accountHolderName String?
-  purchases         Purchase[]    
+  purchases         Purchase[]
 }
 
 model Advertisement {
@@ -116,27 +116,28 @@ model Brand {
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  name             String
-  category         ProductCategory
-  sku              String            @unique
-  mrp              Float
-  genericId        String?
-  generic          Generic?          @relation(fields: [genericId], references: [id])
-  brandId          String?
-  brand            Brand?            @relation(fields: [brandId], references: [id])
-  image            String
-  description      String            @db.Text
-  sellPrice        Float
-  costPrice        Float
-  profitMargin     Float
-  status           Boolean           @default(true)
-  availability     Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  stock            Stock?
-  orderItems       OrderItem[]
-  purchaseItems    PurchaseItem[]    
+  id                String          @id @default(cuid())
+  name              String
+  category          ProductCategory
+  sku               String          @unique
+  mrp               Float
+  genericId         String?
+  generic           Generic?        @relation(fields: [genericId], references: [id])
+  brandId           String?
+  brand             Brand?          @relation(fields: [brandId], references: [id])
+  image             String
+  description       String          @db.Text
+  sellPrice         Float
+  costPrice         Float
+  nextPurchasePrice Float?
+  profitMargin      Float
+  status            Boolean         @default(true)
+  availability      Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  stock             Stock?
+  orderItems        OrderItem[]
+  purchaseItems     PurchaseItem[]
 }
 
 model Stock {
@@ -253,10 +254,10 @@ model PurchaseItem {
   productId    String
   product      Product  @relation(fields: [productId], references: [id])
   quantity     Int
-  costPrice    Float    
-  profitMargin Float    
-  sellPrice    Float    
-  totalCost    Float    
+  costPrice    Float
+  profitMargin Float
+  sellPrice    Float
+  totalCost    Float
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

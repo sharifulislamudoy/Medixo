@@ -1,3 +1,5 @@
+// app/api/admin/purchases/route.ts
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,7 +11,7 @@ async function generatePurchaseNo() {
   return `PO-${(count + 1).toString().padStart(6, "0")}`;
 }
 
-// GET all purchases
+// GET all purchases – newest first
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -22,7 +24,10 @@ export async function GET() {
         supplier: { select: { id: true, name: true, shopName: true, phone: true } },
         items: { include: { product: true } },
       },
-      orderBy: { purchaseDate: "desc" },
+      orderBy: [
+        { purchaseDate: "desc" }, // newest date first
+        { createdAt: "desc" },    // if same date, newest creation first
+      ],
     });
     return NextResponse.json(purchases);
   } catch (error) {
@@ -47,16 +52,13 @@ export async function POST(req: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Generate purchase number
       const purchaseNo = await generatePurchaseNo();
 
-      // Calculate total amount
       let totalAmount = 0;
       for (const item of items) {
         totalAmount += item.quantity * item.costPrice;
       }
 
-      // Create purchase
       const purchase = await tx.purchase.create({
         data: {
           purchaseNo,
@@ -68,9 +70,8 @@ export async function POST(req: Request) {
         },
       });
 
-      // Create purchase items and update stock & product
       for (const item of items) {
-        const { productId, quantity, costPrice, profitMargin } = item;
+        const { productId, quantity, costPrice, profitMargin, nextPurchasePrice } = item;
         const sellPrice = costPrice * (1 + profitMargin / 100);
         const totalCost = quantity * costPrice;
 
@@ -86,14 +87,12 @@ export async function POST(req: Request) {
           },
         });
 
-        // Update stock
         await tx.stock.upsert({
           where: { productId },
           update: { quantity: { increment: quantity } },
           create: { productId, quantity },
         });
 
-        // Optionally update product's costPrice, profitMargin, sellPrice
         if (updateProductDefaults === true) {
           await tx.product.update({
             where: { id: productId },
@@ -101,6 +100,7 @@ export async function POST(req: Request) {
               costPrice,
               profitMargin,
               sellPrice,
+              nextPurchasePrice: nextPurchasePrice ?? null,
             },
           });
         }
