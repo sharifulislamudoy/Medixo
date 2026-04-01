@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ResetStoreButton from "@/components/admin/ResetStoreButton";
 import SetCutoffTimeButton from "@/components/admin/SetCutoffTimeButton";
-import DispatchButton from "@/components/admin/DispatchButton"; // new component
+import DispatchButton from "@/components/admin/DispatchButton";
 
 export default async function AdminDashboardHome() {
   const session = await getServerSession(authOptions);
+
 
   if (!session) {
     redirect("/login");
