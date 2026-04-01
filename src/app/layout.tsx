@@ -4,6 +4,7 @@ import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { Toaster } from "react-hot-toast";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
 import InitialLoader from "@/components/InitialLoader";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://medi-murt-next-js-h55k.vercel.app'), // Replace with your domain
@@ -87,6 +88,7 @@ export default function RootLayout({
             </InitialLoader>
           </CartProviderWrapper>
         </SessionProviderWrapper>
+        <SpeedInsights />
       </body>
     </html>
   );
