@@ -45,6 +45,22 @@ interface OrderItem {
   price: number;
 }
 
+// Helper: highlight search term in a text string
+const highlightText = (text: string, search: string): React.ReactNode => {
+  if (!search.trim()) return text;
+  const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="bg-yellow-200 text-black rounded px-0.5">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+};
+
 export default function AdminOrdersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -99,19 +115,17 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // Enhanced search: also matches product name and SKU inside order items
+  // Filtering logic (includes product name)
   useEffect(() => {
-    const lower = search.toLowerCase().trim();
+    const lower = search.trim().toLowerCase();
     setFiltered(
       orders.filter((order) => {
-        // Basic fields match
         const matchesBasic =
           order.invoiceNo.toLowerCase().includes(lower) ||
           order.customerName.toLowerCase().includes(lower) ||
           order.customerPhone.includes(lower) ||
           (order.deliveryCode?.code?.toLowerCase() || '').includes(lower);
 
-        // Product name / SKU match inside any item
         const matchesProduct = order.items.some(
           (item) =>
             item.product.name.toLowerCase().includes(lower) ||
@@ -124,6 +138,21 @@ export default function AdminOrdersPage() {
     );
     setSelectedOrders(new Set());
   }, [search, orders, statusFilter]);
+
+  // Get unique matching product names for an order
+  const getMatchingProductNames = (order: Order, searchTerm: string): string[] => {
+    if (!searchTerm.trim()) return [];
+    const lowerTerm = searchTerm.toLowerCase();
+    const names = new Set<string>();
+    order.items.forEach((item) => {
+      if (item.product.name.toLowerCase().includes(lowerTerm)) {
+        names.add(item.product.name);
+      } else if (item.product.sku.toLowerCase().includes(lowerTerm)) {
+        names.add(`${item.product.name} (SKU: ${item.product.sku})`);
+      }
+    });
+    return Array.from(names);
+  };
 
   const toggleSelectAll = () => {
     if (selectedOrders.size === filtered.length) {
@@ -260,64 +289,71 @@ export default function AdminOrdersPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setStatusFilter('ALL')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'ALL'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'ALL'
                 ? 'bg-gray-800 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+            }`}
           >
             All
           </button>
           <button
             onClick={() => setStatusFilter('PENDING')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PENDING'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'PENDING'
                 ? 'bg-gray-500 text-white'
                 : 'bg-gray-300 text-white hover:bg-gray-500'
-              }`}
+            }`}
           >
             Pending
           </button>
           <button
             onClick={() => setStatusFilter('PROCESSING')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'PROCESSING'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'PROCESSING'
                 ? 'bg-orange-500 text-white'
                 : 'bg-orange-100 text-orange-500 hover:bg-orange-200'
-              }`}
+            }`}
           >
             Processing
           </button>
           <button
             onClick={() => setStatusFilter('SHIPPED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'SHIPPED'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'SHIPPED'
                 ? 'bg-blue-500 text-white'
                 : 'bg-blue-100 text-blue-500 hover:bg-blue-200'
-              }`}
+            }`}
           >
             Shipped
           </button>
           <button
             onClick={() => setStatusFilter('DELIVERED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'DELIVERED'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'DELIVERED'
                 ? 'bg-green-500 text-white'
                 : 'bg-green-100 text-green-800 hover:bg-green-200'
-              }`}
+            }`}
           >
             Delivered
           </button>
           <button
             onClick={() => setStatusFilter('RETURNED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'RETURNED'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'RETURNED'
                 ? 'bg-purple-500 text-white'
                 : 'bg-purple-100 text-purple-500 hover:bg-purple-200'
-              }`}
+            }`}
           >
             Returned
           </button>
           <button
             onClick={() => setStatusFilter('CANCELLED')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${statusFilter === 'CANCELLED'
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+              statusFilter === 'CANCELLED'
                 ? 'bg-red-500 text-white'
                 : 'bg-red-100 text-red-800 hover:bg-red-200'
-              }`}
+            }`}
           >
             Cancelled
           </button>
@@ -366,7 +402,7 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[1400px]">
+        <table className="w-full min-w-[1200px]">
           <thead className="bg-gray-100 border-b">
             <tr>
               <th className="px-4 py-3 text-left">
@@ -377,7 +413,7 @@ export default function AdminOrdersPage() {
                   className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
                 />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Invoice</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Invoice / Products</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Order Time</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Customer Info</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Total</th>
@@ -396,8 +432,7 @@ export default function AdminOrdersPage() {
                 const orderDateObj = new Date(order.orderDate);
                 const orderDate = orderDateObj.toLocaleDateString();
                 const orderTime = orderDateObj.toLocaleTimeString();
-                const discount = order.discountAmount || 0;
-                const originalTotal = order.originalTotal || order.totalAmount;
+                const matchingProducts = getMatchingProductNames(order, search);
 
                 return (
                   <motion.tr
@@ -418,7 +453,25 @@ export default function AdminOrdersPage() {
                         className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{order.invoiceNo}</td>
+                    <td className="px-4 py-3">
+                      {/* Invoice number with highlight */}
+                      <div className="text-sm font-medium text-gray-900">
+                        {highlightText(order.invoiceNo, search)}
+                      </div>
+                      {/* Matching product badges below invoice */}
+                      {matchingProducts.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {matchingProducts.map((prod, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-block text-xs bg-blue-50 text-blue-800 rounded-full px-2 py-0.5"
+                            >
+                              {highlightText(prod, search)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       <span>{orderDate}</span>
                       <br />
@@ -426,10 +479,12 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       <div className="space-y-1">
-                        {order.customerShopName && <div className="font-bold">{order.customerShopName}</div>}
-                        <div>{order.customerName}</div>
+                        {order.customerShopName && (
+                          <div className="font-bold">{highlightText(order.customerShopName, search)}</div>
+                        )}
+                        <div>{highlightText(order.customerName, search)}</div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-500">{order.customerPhone}</span>
+                          <span className="text-xs text-gray-500">{highlightText(order.customerPhone, search)}</span>
                           <button
                             onClick={() => handleCustomerClick(order.customerPhone)}
                             className="text-gray-400 hover:text-[#0F9D8F] transition"
@@ -444,7 +499,7 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3 text-sm text-green-600">৳{paid.toFixed(2)}</td>
                     <td className="px-4 py-3 text-sm text-red-600">৳{due.toFixed(2)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {order.deliveryCode?.code || '—'}
+                      {order.deliveryCode?.code ? highlightText(order.deliveryCode.code, search) : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -464,7 +519,7 @@ export default function AdminOrdersPage() {
                       >
                         {order.status}
                       </span>
-                      <div className='mt-2'>
+                      <div className="mt-2">
                         {order.items.some((item) => item.returnedQuantity > 0) ? (
                           <button
                             onClick={() => handleViewReturns(order.id)}
