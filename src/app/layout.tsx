@@ -6,7 +6,7 @@ import CartProviderWrapper from "@/components/CartProviderWrapper";
 import InitialLoader from "@/components/InitialLoader";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://medi-murt-next-js-h55k.vercel.app'), // Replace with your domain
+  metadataBase: new URL('https://medixo-bd.vercel.app'), // Replace with your domain
   title: {
     default: 'Medixo',
     template: '%s | Medixo'
@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Medixo',
     description: 'The most reliable platform for shop owners to buy medicines at competitive prices.',
-    url: 'https://medi-murt-next-js-h55k.vercel.app',
+    url: 'https://medixo-bd.vercel.app',
     siteName: 'Medixo',
     images: [
       {
-        url: 'https://medi-murt-next-js-h55k.vercel.app/og-image.jpg', // Your OG image URL
+        url: 'https://medixo-bd.vercel.app/og-image.jpg', // Your OG image URL
         width: 1200,
         height: 630,
         alt: 'Medixo',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Medixo',
     description: 'Shop owners can buy medicines at wholesale prices.',
-    images: ['https://medi-murt-next-js-h55k.vercel.app/og-image.jpg'],
+    images: ['https://medixo-bd.vercel.app/og-image.jpg'],
   },
   robots: {
     index: true,

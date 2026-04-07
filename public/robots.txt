@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://medi-murt-next-js-h55k.vercel.app/sitemap.xml
+Sitemap: https://medixo-bd.vercel.app/sitemap.xml
