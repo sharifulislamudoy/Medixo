@@ -99,17 +99,27 @@ export default function AdminOrdersPage() {
     }
   };
 
+  // Enhanced search: also matches product name and SKU inside order items
   useEffect(() => {
-    const lower = search.toLowerCase();
+    const lower = search.toLowerCase().trim();
     setFiltered(
-      orders.filter((o) => {
-        const matchesSearch =
-          o.invoiceNo.toLowerCase().includes(lower) ||
-          o.customerName.toLowerCase().includes(lower) ||
-          o.customerPhone.includes(lower) ||
-          (o.deliveryCode?.code?.toLowerCase() || '').includes(lower);
-        const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
-        return matchesSearch && matchesStatus;
+      orders.filter((order) => {
+        // Basic fields match
+        const matchesBasic =
+          order.invoiceNo.toLowerCase().includes(lower) ||
+          order.customerName.toLowerCase().includes(lower) ||
+          order.customerPhone.includes(lower) ||
+          (order.deliveryCode?.code?.toLowerCase() || '').includes(lower);
+
+        // Product name / SKU match inside any item
+        const matchesProduct = order.items.some(
+          (item) =>
+            item.product.name.toLowerCase().includes(lower) ||
+            item.product.sku.toLowerCase().includes(lower)
+        );
+
+        const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+        return (matchesBasic || matchesProduct) && matchesStatus;
       })
     );
     setSelectedOrders(new Set());
@@ -315,7 +325,7 @@ export default function AdminOrdersPage() {
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Search by invoice, customer, phone, delivery code..."
+            placeholder="Search by invoice, customer, phone, delivery code, or PRODUCT NAME..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black w-100"
