@@ -1,42 +1,32 @@
-// app/api/admin/purchases/route.ts
-
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Helper to generate purchase number
 async function generatePurchaseNo() {
   const count = await prisma.purchase.count();
   return `PO-${(count + 1).toString().padStart(6, "0")}`;
 }
 
-// GET all purchases – newest first
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   try {
     const purchases = await prisma.purchase.findMany({
       include: {
         supplier: { select: { id: true, name: true, shopName: true, phone: true } },
         items: { include: { product: true } },
       },
-      orderBy: [
-        { purchaseDate: "desc" }, // newest date first
-        { createdAt: "desc" },    // if same date, newest creation first
-      ],
+      orderBy: [{ purchaseDate: "desc" }, { createdAt: "desc" }],
     });
     return NextResponse.json(purchases);
   } catch (error) {
-    console.error(error);
     return NextResponse.json({ error: "Failed to fetch purchases" }, { status: 500 });
   }
 }
 
-// POST create purchase
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") {
@@ -53,7 +43,6 @@ export async function POST(req: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const purchaseNo = await generatePurchaseNo();
-
       let totalAmount = 0;
       for (const item of items) {
         totalAmount += item.quantity * item.costPrice;
@@ -71,7 +60,7 @@ export async function POST(req: Request) {
       });
 
       for (const item of items) {
-        const { productId, quantity, costPrice, profitMargin, nextPurchasePrice } = item;
+        const { productId, quantity, costPrice, profitMargin, mrp, nextPurchasePrice } = item;
         const sellPrice = costPrice * (1 + profitMargin / 100);
         const totalCost = quantity * costPrice;
 
@@ -84,6 +73,7 @@ export async function POST(req: Request) {
             profitMargin,
             sellPrice,
             totalCost,
+            mrp: mrp || null,   // 👈 store MRP
           },
         });
 
@@ -101,14 +91,13 @@ export async function POST(req: Request) {
               profitMargin,
               sellPrice,
               nextPurchasePrice: nextPurchasePrice ?? null,
+              mrp: mrp ?? undefined,   // 👈 update product MRP if provided
             },
           });
         }
       }
-
       return purchase;
     });
-
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error(error);

@@ -258,6 +258,7 @@ model PurchaseItem {
   profitMargin Float
   sellPrice    Float
   totalCost    Float
+   mrp         Float?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

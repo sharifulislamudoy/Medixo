@@ -195,7 +195,6 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
             <label className="block text-sm font-medium text-gray-700 mb-1">MRP *</label>
             <input
               type="number"
-              step="0.01"
               name="mrp"
               value={form.mrp}
               onChange={handleChange}
@@ -292,7 +291,6 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
             <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price *</label>
             <input
               type="number"
-              step="0.01"
               name="costPrice"
               value={form.costPrice}
               onChange={handleChange}
@@ -306,7 +304,6 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
             <label className="block text-sm font-medium text-gray-700 mb-1">Profit Margin (%) *</label>
             <input
               type="number"
-              step="0.1"
               min="0"
               name="profitMargin"
               value={form.profitMargin}

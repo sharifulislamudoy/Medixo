@@ -1,5 +1,3 @@
-// app/dashboard/admin/edit-purchase/[id]/page.tsx
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -19,6 +17,7 @@ interface ProductOption {
   id: string;
   name: string;
   sku: string;
+  mrp: number;
   costPrice: number;
   profitMargin: number;
   sellPrice: number;
@@ -35,8 +34,13 @@ interface PurchaseItem {
   profitMargin: number;
   sellPrice: number;
   totalCost: number;
+  mrp: number;
   nextPurchasePrice?: number;
 }
+
+const roundToTwo = (num: number): number => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
 
 export default function EditPurchasePage() {
   const router = useRouter();
@@ -105,21 +109,18 @@ export default function EditPurchasePage() {
       setPurchaseDate(data.purchaseDate.split("T")[0]);
       setPaymentStatus(data.paymentStatus);
       setNotes(data.notes || "");
-      const loadedItems = data.items.map((item: any) => {
-        const product = products.find(p => p.id === item.productId);
-        const nextPurchasePrice = product?.nextPurchasePrice ?? item.product.nextPurchasePrice ?? undefined;
-        return {
-          productId: item.productId,
-          productName: item.product.name,
-          productSku: item.product.sku,
-          quantity: item.quantity,
-          costPrice: item.costPrice,
-          profitMargin: item.profitMargin,
-          sellPrice: item.sellPrice,
-          totalCost: item.totalCost,
-          nextPurchasePrice,
-        };
-      });
+      const loadedItems = data.items.map((item: any) => ({
+        productId: item.productId,
+        productName: item.product.name,
+        productSku: item.product.sku,
+        quantity: item.quantity,
+        costPrice: roundToTwo(item.costPrice),
+        profitMargin: item.profitMargin,
+        sellPrice: roundToTwo(item.sellPrice),
+        totalCost: roundToTwo(item.totalCost),
+        mrp: roundToTwo(item.mrp ?? item.product.mrp),
+        nextPurchasePrice: item.product.nextPurchasePrice ? roundToTwo(item.product.nextPurchasePrice) : undefined,
+      }));
       setItems(loadedItems);
     } catch (error) {
       toast.error("Failed to load purchase");
@@ -136,8 +137,8 @@ export default function EditPurchasePage() {
     }
     const costPrice = product.nextPurchasePrice ?? product.costPrice;
     const profitMargin = product.profitMargin;
-    const sellPrice = costPrice * (1 + profitMargin / 100);
-    const nextPurchasePrice = sellPrice * (99 - profitMargin) / 100;
+    const sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
+    const nextPurchasePrice = roundToTwo(sellPrice * (99 - profitMargin) / 100);
 
     setItems([
       ...items,
@@ -146,10 +147,11 @@ export default function EditPurchasePage() {
         productName: product.name,
         productSku: product.sku,
         quantity: 1,
-        costPrice,
+        costPrice: roundToTwo(costPrice),
         profitMargin,
         sellPrice,
-        totalCost: costPrice,
+        totalCost: roundToTwo(costPrice),
+        mrp: product.mrp,
         nextPurchasePrice,
       },
     ]);
@@ -163,23 +165,26 @@ export default function EditPurchasePage() {
 
   const updateItem = (index: number, field: string, value: any) => {
     const updated = [...items];
+    let numericValue = parseFloat(value);
+    if (isNaN(numericValue)) numericValue = 0;
+
     if (field === "quantity") {
-      updated[index].quantity = parseFloat(value) || 0;
+      updated[index].quantity = Math.floor(numericValue);
     } else if (field === "costPrice") {
-      updated[index].costPrice = parseFloat(value) || 0;
+      updated[index].costPrice = roundToTwo(numericValue);
     } else if (field === "profitMargin") {
-      updated[index].profitMargin = parseFloat(value) || 0;
+      updated[index].profitMargin = numericValue;
+    } else if (field === "mrp") {
+      updated[index].mrp = roundToTwo(numericValue);
     } else if (field === "nextPurchasePrice") {
-      updated[index].nextPurchasePrice = parseFloat(value) || undefined;
+      updated[index].nextPurchasePrice = roundToTwo(numericValue);
     }
 
-    // Recalculate derived fields
     const { costPrice, profitMargin } = updated[index];
-    updated[index].sellPrice = costPrice * (1 + profitMargin / 100);
-    updated[index].totalCost = updated[index].quantity * costPrice;
-    // If nextPurchasePrice wasn't manually changed, auto‑update it
+    updated[index].sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
+    updated[index].totalCost = roundToTwo(updated[index].quantity * costPrice);
     if (field !== "nextPurchasePrice") {
-      updated[index].nextPurchasePrice = updated[index].sellPrice * (99 - profitMargin) / 100;
+      updated[index].nextPurchasePrice = roundToTwo(updated[index].sellPrice * (99 - profitMargin) / 100);
     }
     setItems(updated);
   };
@@ -219,9 +224,10 @@ export default function EditPurchasePage() {
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
-            costPrice: item.costPrice,
+            costPrice: roundToTwo(item.costPrice),
             profitMargin: item.profitMargin,
-            nextPurchasePrice: item.nextPurchasePrice,
+            mrp: roundToTwo(item.mrp),
+            nextPurchasePrice: item.nextPurchasePrice ? roundToTwo(item.nextPurchasePrice) : null,
           })),
           updateProductDefaults,
         }),
@@ -264,9 +270,9 @@ export default function EditPurchasePage() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
                 required
               >
-                <option value="" className="text-gray-900">Select supplier</option>
+                <option value="">Select supplier</option>
                 {suppliers.map((s) => (
-                  <option key={s.id} value={s.id} className="text-gray-900">
+                  <option key={s.id} value={s.id}>
                     {s.shopName || s.name} ({s.phone})
                   </option>
                 ))}
@@ -288,8 +294,8 @@ export default function EditPurchasePage() {
                 onChange={(e) => setPaymentStatus(e.target.value as "PAID" | "DUE")}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
               >
-                <option value="DUE" className="text-gray-900">Due</option>
-                <option value="PAID" className="text-gray-900">Paid</option>
+                <option value="DUE">Due</option>
+                <option value="PAID">Paid</option>
               </select>
             </div>
             <div>
@@ -304,13 +310,10 @@ export default function EditPurchasePage() {
           </div>
         </div>
 
-        {/* Products Section with Search */}
+        {/* Products Section */}
         <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Products</h2>
-          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Products</h2>
 
-          {/* Search Input */}
           <div className="relative mb-4" ref={searchRef}>
             <input
               type="text"
@@ -340,16 +343,10 @@ export default function EditPurchasePage() {
                 ))}
               </div>
             )}
-            {showSuggestions && searchTerm && filteredProducts.length === 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-gray-500 text-sm">
-                No products found
-              </div>
-            )}
           </div>
 
-          {/* Products Table */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[900px]">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Product</th>
@@ -357,6 +354,7 @@ export default function EditPurchasePage() {
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Cost (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Margin %</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Sell (৳)</th>
+                  <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">MRP (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Total (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Next Purchase (৳)</th>
                   <th></th>
@@ -372,44 +370,46 @@ export default function EditPurchasePage() {
                     <td className="px-2 py-2">
                       <input
                         type="number"
-                        step="1"
                         min="0"
                         value={item.quantity}
                         onChange={(e) => updateItem(idx, "quantity", e.target.value)}
                         className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
-                        required
                       />
                     </td>
                     <td className="px-2 py-2">
                       <input
                         type="number"
-                        step="0.01"
                         min="0"
                         value={item.costPrice}
                         onChange={(e) => updateItem(idx, "costPrice", e.target.value)}
                         className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
-                        required
                       />
                     </td>
                     <td className="px-2 py-2">
                       <input
                         type="number"
-                        step="0.1"
                         min="0"
                         value={item.profitMargin}
                         onChange={(e) => updateItem(idx, "profitMargin", e.target.value)}
                         className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
-                        required
                       />
                     </td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.sellPrice.toFixed(2)}</td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.mrp}
+                        onChange={(e) => updateItem(idx, "mrp", e.target.value)}
+                        className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
+                      />
+                    </td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.totalCost.toFixed(2)}</td>
                     <td className="px-2 py-2">
                       <input
                         type="number"
-                        step="0.01"
                         min="0"
-                        value={item.nextPurchasePrice ?? ""}
+                        value={item.nextPurchasePrice?.toFixed(2) ?? ""}
                         onChange={(e) => updateItem(idx, "nextPurchasePrice", e.target.value)}
                         className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
                         placeholder="Auto"
@@ -430,9 +430,7 @@ export default function EditPurchasePage() {
             </table>
           </div>
           {items.length === 0 && (
-            <div className="text-center py-6 text-gray-500">
-              No products added. Search and add products above.
-            </div>
+            <div className="text-center py-6 text-gray-500">No products added. Search and add products above.</div>
           )}
 
           <div className="mt-4 text-right font-bold text-lg text-gray-900">
@@ -448,7 +446,7 @@ export default function EditPurchasePage() {
               className="rounded border-gray-300 text-[#0F9D8F] focus:ring-[#0F9D8F]"
             />
             <label htmlFor="updateDefaults" className="text-sm text-gray-700">
-              Update product's default cost price & profit margin with these values
+              Update product's default cost price, profit margin & MRP with these values
             </label>
           </div>
         </div>
