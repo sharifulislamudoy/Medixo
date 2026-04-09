@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateNextSKU } from "@/lib/sku";
+import { slugify, generateUniqueSlug } from "@/lib/slugify";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -19,7 +20,6 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  // Flatten stock for admin table
   const mapped = products.map(p => ({
     ...p,
     stock: p.stock?.quantity ?? 0,
@@ -43,21 +43,22 @@ export async function POST(req: Request) {
     image,
     description,
     costPrice,
-    profitMargin,        // 👈 NEW: receive profit margin
+    profitMargin,
     stock,
   } = await req.json();
 
-  // 👇 updated validation: profitMargin is required
   if (!name || !category || !mrp || !image || !description || !costPrice || profitMargin === undefined || stock === undefined) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // 👇 compute sell price from cost + margin
   const cost = parseFloat(costPrice);
   const margin = parseFloat(profitMargin);
   const sellPrice = cost * (1 + margin / 100);
-
   const sku = await generateNextSKU();
+
+  // Generate unique slug from product name
+  const baseSlug = slugify(name);
+  const slug = await generateUniqueSlug(baseSlug, prisma);
 
   let genericId = null;
   if (genericName) {
@@ -79,11 +80,11 @@ export async function POST(req: Request) {
     brandId = brand.id;
   }
 
-  // Transaction: create product + stock
   const product = await prisma.$transaction(async (tx) => {
     const newProduct = await tx.product.create({
       data: {
         name,
+        slug,                     // 👈 store the generated slug
         category,
         sku,
         mrp: parseFloat(mrp),
@@ -92,8 +93,8 @@ export async function POST(req: Request) {
         image,
         description,
         costPrice: cost,
-        profitMargin: margin,     // 👈 store margin
-        sellPrice,                // 👈 store computed sell price
+        profitMargin: margin,
+        sellPrice,
       },
       include: { generic: true, brand: true },
     });
@@ -108,6 +109,5 @@ export async function POST(req: Request) {
     return newProduct;
   });
 
-  // Return with stock field for consistency
   return NextResponse.json({ ...product, stock: parseInt(stock, 10) });
 }
