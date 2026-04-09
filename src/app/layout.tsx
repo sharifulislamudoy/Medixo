@@ -6,10 +6,10 @@ import CartProviderWrapper from "@/components/CartProviderWrapper";
 import InitialLoader from "@/components/InitialLoader";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://medixo-bd.vercel.app'), // Replace with your domain
+  metadataBase: new URL('https://medixo-bd.vercel.app'),
   title: {
     default: 'Medixo',
-    template: '%s | Medixo'
+    template: 'Medixo'
   },
   description: 'Bangladesh’s leading B2B wholesale medicine marketplace. Shop owners can purchase pharmaceuticals at the best prices with easy delivery and secure payment.',
   keywords: ['wholesale medicine', 'B2B pharmaceutical', 'medicine supplier', 'pharmacy supply', 'drug trading'],
@@ -75,7 +75,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="google-site-verification" content="mnxa3sKPJ91f6rAGqbXyyIZYDSJBR1H8s_06QAASItM" />
+        <meta name="google-site-verification" content="N5bNK87ZMOqCOOPSk-nQWJROmWNnI9_EsShABtA8W6U" />
       </head>
       <body
         cz-shortcut-listen="true">
