@@ -7,7 +7,7 @@ import "swiper/css/pagination";
 import ProductCard from "./ProductCard";
 
 interface ProductSliderWrapperProps {
-  products: any[]; // Replace with proper type
+  products: any[]; // Replace with your actual Product type
 }
 
 export default function ProductSliderWrapper({ products }: ProductSliderWrapperProps) {

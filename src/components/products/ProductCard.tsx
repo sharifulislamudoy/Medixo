@@ -4,7 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface ProductCardProps {
-  product: any; // Replace with proper type
+  product: {
+    id: string;
+    slug: string;          
+    name: string;
+    image: string;
+    mrp: number;
+    sellPrice: number;
+    generic?: { name: string } | null;
+    brand?: { name: string } | null;
+  };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -13,7 +22,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     : 0;
 
   return (
-    <Link href={`/products/${product.id}`} className="group">
+    <Link href={`/products/${product.slug}`} className="group">   {/* ✅ slug */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
         <div className="relative h-40 w-full">
           <Image
