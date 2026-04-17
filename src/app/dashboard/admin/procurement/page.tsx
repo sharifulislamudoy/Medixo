@@ -1,106 +1,87 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Package, ChevronDown } from 'lucide-react';
+import { MoreVertical, Eye, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-interface ProcurementItem {
-  id: string;
-  product: {
-    name: string;
-    sku: string;
-    image: string;
-  };
-  orderedQuantity: number;
-  currentStock: number;
-  purchasePrice: number;
-  mrp: number;
-}
+import DeleteProcurementModal from '@/components/admin/DeleteProcurementModal';
 
 interface Procurement {
   id: string;
   prNumber: string;
   createdAt: string;
-  status: string;
-  items: ProcurementItem[];
+  status: boolean;
+  items: any[];
 }
 
-export default function AdminProcurementPage() {
-  const { data: session, status } = useSession();
+export default function ProcurementListPage() {
   const router = useRouter();
   const [procurements, setProcurements] = useState<Procurement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProcurement, setSelectedProcurement] = useState<Procurement | null>(null);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedProcurements, setSelectedProcurements] = useState<Set<string>>(new Set());
-  const [bulkActionOpen, setBulkActionOpen] = useState(false);
-  const [sendingRequest, setSendingRequest] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-    if (status === 'authenticated') {
-      fetchProcurements();
-    }
-  }, [status, router]);
+    fetchProcurements();
+  }, []);
 
   const fetchProcurements = async () => {
     try {
       const res = await fetch('/api/admin/procurement');
-      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setProcurements(data.procurements);
+      if (res.ok) setProcurements(data.procurements);
+      else toast.error('Failed to load procurements');
     } catch (error) {
-      toast.error('Failed to load procurement requests');
+      toast.error('An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleView = (proc: Procurement) => {
-    setSelectedProcurement(proc);
-    setViewModalOpen(true);
-  };
-
-  const handleSendPurchaseRequest = async () => {
-    if (selectedProcurements.size === 0) {
-      toast.error('Please select at least one procurement request');
-      return;
-    }
-    setSendingRequest(true);
+  const handleToggleStatus = async (proc: Procurement) => {
+    setToggling(proc.id);
     try {
-      // Placeholder: just simulate sending
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success(`Purchase request sent for ${selectedProcurements.size} procurement(s)`);
-      setSelectedProcurements(new Set());
-      setBulkActionOpen(false);
+      const res = await fetch(`/api/admin/procurement/${proc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: !proc.status, items: proc.items }),
+      });
+      if (res.ok) {
+        toast.success(`Status ${!proc.status ? 'activated' : 'deactivated'}`);
+        fetchProcurements();
+      } else {
+        toast.error('Failed to update status');
+      }
     } catch (error) {
-      toast.error('Failed to send purchase request');
+      toast.error('An error occurred');
     } finally {
-      setSendingRequest(false);
+      setToggling(null);
     }
   };
 
-  const toggleSelectAll = () => {
-    if (selectedProcurements.size === procurements.length) {
-      setSelectedProcurements(new Set());
-    } else {
-      setSelectedProcurements(new Set(procurements.map((p) => p.id)));
-    }
+  const handleDelete = (proc: Procurement) => {
+    setSelectedProcurement(proc);
+    setDeleteModalOpen(true);
+    setActiveDropdown(null);
   };
 
-  const toggleSelectProcurement = (id: string) => {
-    const newSet = new Set(selectedProcurements);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
+  const confirmDelete = async () => {
+    if (!selectedProcurement) return;
+    try {
+      const res = await fetch(`/api/admin/procurement/${selectedProcurement.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Procurement deleted');
+        setDeleteModalOpen(false);
+        fetchProcurements();
+      } else {
+        toast.error('Failed to delete');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
     }
-    setSelectedProcurements(newSet);
   };
 
   if (loading) {
@@ -113,202 +94,105 @@ export default function AdminProcurementPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 p-4"
     >
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Procurement Requests</h1>
-        <div className="flex gap-2">
-          {/* Bulk Actions Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setBulkActionOpen(!bulkActionOpen)}
-              disabled={selectedProcurements.size === 0}
-              className={`px-4 py-2 rounded-lg flex items-center gap-1 ${
-                selectedProcurements.size > 0
-                  ? 'bg-[#0F9D8F] text-white hover:bg-[#0c7d72]'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Bulk Actions ({selectedProcurements.size})
-              <ChevronDown size={16} />
-            </button>
-            <AnimatePresence>
-              {bulkActionOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
-                >
-                  <button
-                    onClick={handleSendPurchaseRequest}
-                    disabled={sendingRequest}
-                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    {sendingRequest ? 'Sending...' : 'Send Purchase Request'}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-800">Procurements</h1>
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[800px]">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-gray-100 border-b">
             <tr>
-              <th className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={procurements.length > 0 && selectedProcurements.size === procurements.length}
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PR Number</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">PR Number</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Date & Time</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {procurements.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-500">
-                  No procurement requests found.
-                </td>
-              </tr>
-            ) : (
-              procurements.map((proc) => (
-                <tr key={proc.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedProcurements.has(proc.id)}
-                      onChange={() => toggleSelectProcurement(proc.id)}
-                      className="w-4 h-4 text-[#0F9D8F] border-gray-300 rounded focus:ring-[#0F9D8F]"
-                    />
+            <AnimatePresence>
+              {procurements.map((proc) => (
+                <motion.tr
+                  key={proc.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="hover:bg-gray-50"
+                >
+                  <td className="px-4 py-3 font-medium text-[#0F9D8F]">{proc.prNumber}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(proc.createdAt).toLocaleDateString()}<br />
+                    {new Date(proc.createdAt).toLocaleTimeString()}
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{proc.prNumber}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(proc.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{proc.items.length} items</td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <button
-                      onClick={() => handleView(proc)}
-                      className="text-[#0F9D8F] hover:text-[#0c7d72] transition"
-                      title="View Details"
+                      onClick={() => handleToggleStatus(proc)}
+                      disabled={toggling === proc.id}
+                      className="focus:outline-none"
                     >
-                      <Eye size={18} />
+                      {proc.status ? (
+                        <ToggleRight className="text-green-600" size={28} />
+                      ) : (
+                        <ToggleLeft className="text-gray-400" size={28} />
+                      )}
                     </button>
                   </td>
-                </tr>
-              ))
-            )}
+                  <td className="px-4 py-3 relative">
+                    <button
+                      onClick={() => setActiveDropdown(activeDropdown === proc.id ? null : proc.id)}
+                      className="bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white p-1 rounded-full hover:opacity-90"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+                    <AnimatePresence>
+                      {activeDropdown === proc.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
+                        >
+                          <button
+                            onClick={() => router.push(`/dashboard/admin/procurement/${proc.id}`)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Eye size={16} /> View
+                          </button>
+                          <button
+                            onClick={() => router.push(`/dashboard/admin/procurement/${proc.id}/edit`)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Edit size={16} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(proc)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} /> Delete
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </td>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
           </tbody>
         </table>
+        {procurements.length === 0 && (
+          <div className="text-center py-12 text-gray-500">No procurements found.</div>
+        )}
       </div>
 
-      {/* View Procurement Modal */}
-      {viewModalOpen && selectedProcurement && (
-        <ProcurementViewModal
-          isOpen={viewModalOpen}
-          onClose={() => setViewModalOpen(false)}
-          procurement={selectedProcurement}
-        />
-      )}
+      <DeleteProcurementModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        prNumber={selectedProcurement?.prNumber || ''}
+      />
     </motion.div>
-  );
-}
-
-// Modal Component (same as before, but included here for completeness)
-function ProcurementViewModal({
-  isOpen,
-  onClose,
-  procurement,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  procurement: Procurement;
-}) {
-  if (!isOpen) return null;
-
-  const totalCost = procurement.items.reduce(
-    (sum, item) => sum + item.purchasePrice * item.orderedQuantity,
-    0
-  );
-
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto"
-      >
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Procurement {procurement.prNumber}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="p-4">
-          <p className="text-gray-600 mb-4">Created: {new Date(procurement.createdAt).toLocaleString()}</p>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Ordered Qty</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Current Stock</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Purchase Price</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">MRP</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {procurement.items.map((item) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="px-4 py-2 text-sm text-gray-900">{item.product.name}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{item.orderedQuantity}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{item.currentStock}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">৳{item.purchasePrice.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">৳{item.mrp.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-sm font-medium text-[#0F9D8F]">
-                      ৳{(item.purchasePrice * item.orderedQuantity).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td colSpan={5} className="px-4 py-2 text-right font-bold text-gray-800">
-                    Total
-                  </td>
-                  <td className="px-4 py-2 font-bold text-[#0F9D8F]">৳{totalCost.toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
   );
 }

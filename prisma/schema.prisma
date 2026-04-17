@@ -139,6 +139,7 @@ model Product {
   stock             Stock?
   orderItems        OrderItem[]
   purchaseItems     PurchaseItem[]
+  procurementItems ProcurementItem[]
 }
 
 model Stock {
@@ -262,4 +263,35 @@ model PurchaseItem {
    mrp         Float?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// prisma/schema.prisma
+
+// ... keep existing models (User, Product, Order, etc.)
+
+model Procurement {
+  id            String             @id @default(cuid())
+  prNumber      String             @unique
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  status        Boolean            @default(true)   // active/inactive
+  items         ProcurementItem[]
+  notes         String?            @db.Text
+}
+
+model ProcurementItem {
+  id               String      @id @default(cuid())
+  procurementId    String
+  procurement      Procurement @relation(fields: [procurementId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product     @relation(fields: [productId], references: [id])
+  orderQuantity    Int         // aggregated quantity from selected orders
+  mrp              Float?      // override MRP
+  costPrice        Float?      // override cost price
+  sellPrice        Float?      // override sell price
+  requiredQuantity Int         // editable required quantity
+  bidding          Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

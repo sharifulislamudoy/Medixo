@@ -235,29 +235,17 @@ export default function AdminOrdersPage() {
     setCustomerModalOpen(true);
   };
 
-  const handleCreateProcurement = async () => {
-    if (selectedOrders.size === 0) {
-      toast.error('Please select at least one order');
-      return;
-    }
-    setCreatingProcurement(true);
-    try {
-      const res = await fetch('/api/admin/procurement/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderIds: Array.from(selectedOrders) }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      toast.success(`Procurement ${data.procurement.prNumber} created`);
-      setSelectedOrders(new Set());
-      setBulkActionOpen(false);
-    } catch (error) {
-      toast.error('Failed to create procurement');
-    } finally {
-      setCreatingProcurement(false);
-    }
-  };
+// Inside AdminOrdersPage component, replace handleCreateProcurement with:
+
+const handleCreateProcurement = () => {
+  if (selectedOrders.size === 0) {
+    toast.error('Please select at least one order');
+    return;
+  }
+  const orderIds = Array.from(selectedOrders).join(',');
+  router.push(`/dashboard/admin/procurement/new?orderIds=${orderIds}`);
+  setBulkActionOpen(false);
+};
 
   const rowVariants = {
     hidden: { opacity: 0, y: 20 },
