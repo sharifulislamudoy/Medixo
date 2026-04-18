@@ -168,6 +168,12 @@ export default function ProcurementListPage() {
                             <Edit size={16} /> Edit
                           </button>
                           <button
+                            onClick={() => router.push(`/dashboard/admin/procurement/${proc.id}/assign-order`)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Assign
+                          </button>
+                          <button
                             onClick={() => handleDelete(proc)}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                           >

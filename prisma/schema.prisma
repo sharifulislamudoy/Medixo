@@ -70,6 +70,7 @@ model User {
   bankBranch        String?
   accountHolderName String?
   purchases         Purchase[]
+  procurementAssignments ProcurementAssignment[]
 }
 
 model Advertisement {
@@ -294,4 +295,19 @@ model ProcurementItem {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  assignments ProcurementAssignment[]
+}
+
+model ProcurementAssignment {
+  id                String           @id @default(cuid())
+  procurementItemId String
+  procurementItem   ProcurementItem  @relation(fields: [procurementItemId], references: [id], onDelete: Cascade)
+  supplierId        String
+  supplier          User             @relation(fields: [supplierId], references: [id])
+  quantity          Int
+  costPrice         Float
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([procurementItemId, supplierId])
 }
