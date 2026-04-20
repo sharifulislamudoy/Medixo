@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Search, Filter, Send, Save } from 'lucide-react';
+import { Search, Filter, Send } from 'lucide-react';
 
 interface ProcurementProduct {
   productId: string;
@@ -39,8 +39,8 @@ export default function NewProcurementPage() {
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [brands, setBrands] = useState<Brand[]>([]);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState('');
 
-  // Load draft from localStorage on mount
   useEffect(() => {
     const draftKey = `procurement-draft-${orderIds.join('-')}`;
     const savedDraft = localStorage.getItem(draftKey);
@@ -49,10 +49,9 @@ export default function NewProcurementPage() {
         const parsed = JSON.parse(savedDraft);
         setProducts(parsed);
         setFilteredProducts(parsed);
-        // Extract unique brands from draft
-        extractBrandsFromProducts(parsed);
+        extractBrands(parsed);
         setLoading(false);
-      } catch (e) {
+      } catch {
         fetchAggregatedData();
       }
     } else {
@@ -69,7 +68,6 @@ export default function NewProcurementPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        // Calculate required quantity = orderQuantity + Math.abs(currentStock)
         const productsWithRequired = data.products.map((p: any) => ({
           ...p,
           requiredQuantity: p.orderQuantity + Math.abs(p.currentStock),
@@ -77,11 +75,8 @@ export default function NewProcurementPage() {
         }));
         setProducts(productsWithRequired);
         setFilteredProducts(productsWithRequired);
-        // Extract unique brands from products
-        extractBrandsFromProducts(productsWithRequired);
-        // Save initial draft
-        const draftKey = `procurement-draft-${orderIds.join('-')}`;
-        localStorage.setItem(draftKey, JSON.stringify(productsWithRequired));
+        extractBrands(productsWithRequired);
+        localStorage.setItem(`procurement-draft-${orderIds.join('-')}`, JSON.stringify(productsWithRequired));
       } else {
         toast.error(data.error || 'Failed to load products');
       }
@@ -92,8 +87,7 @@ export default function NewProcurementPage() {
     }
   };
 
-  // Extract unique brands from product list
-  const extractBrandsFromProducts = (productList: ProcurementProduct[]) => {
+  const extractBrands = (productList: ProcurementProduct[]) => {
     const brandMap = new Map<string, Brand>();
     productList.forEach(p => {
       if (p.brandName && !brandMap.has(p.brandName)) {
@@ -103,16 +97,12 @@ export default function NewProcurementPage() {
     setBrands(Array.from(brandMap.values()));
   };
 
-  // Save draft to localStorage whenever products change
   useEffect(() => {
     if (products.length > 0) {
-      const draftKey = `procurement-draft-${orderIds.join('-')}`;
-      localStorage.setItem(draftKey, JSON.stringify(products));
-      // Update brands when products change (e.g., after manual edits that might affect brand? not needed)
+      localStorage.setItem(`procurement-draft-${orderIds.join('-')}`, JSON.stringify(products));
     }
   }, [products, orderIds]);
 
-  // Filter products based on search and brand
   useEffect(() => {
     let filtered = products;
     if (searchTerm.trim()) {
@@ -128,7 +118,6 @@ export default function NewProcurementPage() {
     setFilteredProducts(filtered);
   }, [searchTerm, selectedBrand, products]);
 
-  // Update a field for a specific product
   const updateProductField = (productId: string, field: keyof ProcurementProduct, value: any) => {
     setProducts(prev => prev.map(p =>
       p.productId === productId ? { ...p, [field]: value } : p
@@ -141,12 +130,11 @@ export default function NewProcurementPage() {
       const res = await fetch('/api/admin/procurement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: products }),
+        body: JSON.stringify({ items: products, notes }),
       });
       const data = await res.json();
       if (res.ok) {
         toast.success(`Procurement ${data.procurement.prNumber} created`);
-        // Clear draft
         localStorage.removeItem(`procurement-draft-${orderIds.join('-')}`);
         router.push('/dashboard/admin/procurement');
       } else {
@@ -168,14 +156,9 @@ export default function NewProcurementPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 p-4"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-4">
       <h1 className="text-3xl font-bold text-gray-800">Create Procurement</h1>
 
-      {/* Search & Filter Bar */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[250px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -202,7 +185,6 @@ export default function NewProcurementPage() {
         </div>
       </div>
 
-      {/* Products Table */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full min-w-[1200px]">
           <thead className="bg-gray-100 border-b">
@@ -286,7 +268,6 @@ export default function NewProcurementPage() {
         )}
       </div>
 
-      {/* Action Buttons */}
       <div className="flex justify-end gap-4">
         <button
           onClick={() => router.back()}
