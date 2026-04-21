@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import AddToCartButton from "@/components/products/AddToCartButton";
-import FavouriteButton from "@/components/products/FavouriteButton";
 import { Suspense } from "react";
-import ProductSliderWrapper from "@/components/products/ProductSliderWrapper";
 import { Metadata } from "next";
+import ProductDetailsClient from "./ProductDetailsClient";
+import ProductSliderWrapper from "@/components/products/ProductSliderWrapper";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -45,14 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: `https://medixo-bd.vercel.app/products/${slug}`,
-      images: [
-        {
-          url: product.image,
-          width: 800,
-          height: 600,
-          alt: product.name,
-        },
-      ],
+      images: [{ url: product.image, width: 800, height: 600, alt: product.name }],
       type: "website",
     },
     twitter: {
@@ -91,74 +82,6 @@ async function ProductBreadcrumb({ slug }: { slug: string }) {
       <span className="mx-2 text-gray-400">/</span>
       <span className="text-gray-700">{product.name}</span>
     </nav>
-  );
-}
-
-// ---------- MAIN PRODUCT DETAILS ----------
-async function ProductDetails({ slug }: { slug: string }) {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      generic: true,
-      brand: true,
-      stock: true,
-    },
-  });
-
-  if (!product) notFound();
-
-  const discount = product.mrp > product.sellPrice
-    ? Math.round(((product.mrp - product.sellPrice) / product.mrp) * 100)
-    : 0;
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="md:flex">
-        <div className="md:w-1/2 relative h-80 md:h-auto">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-contain p-4"
-            priority
-          />
-          {discount > 0 && (
-            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold z-10">
-              {discount}% OFF
-            </div>
-          )}
-          <div className="absolute top-4 right-4 z-10">
-            <FavouriteButton product={product} />
-          </div>
-        </div>
-
-        <div className="md:w-1/2 p-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.name}</h1>
-          <p className="text-gray-600 mb-4">
-            {product.generic?.name} {product.brand?.name && `by ${product.brand.name}`}
-          </p>
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-3xl font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
-            {product.mrp > product.sellPrice && (
-              <span className="text-xl text-gray-400 line-through">৳{product.mrp}</span>
-            )}
-          </div>
-          <div className="space-y-3 mb-6">
-            <p><span className="font-medium text-black">Category:</span> <span className="font-medium text-gray-500">{product.category.replace('_', ' ')}</span></p>
-            <p><span className="font-medium text-black">Availability:</span>
-              <span className={`ml-2 ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
-                {product.availability ? 'In Stock' : 'Out of Stock'}
-              </span>
-            </p>
-          </div>
-          <div className="mb-6">
-            <h3 className="font-medium text-black mb-2">Description</h3>
-            <p className="text-gray-500 whitespace-pre-line">{product.description}</p>
-          </div>
-          <AddToCartButton product={product} />
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -224,19 +147,23 @@ export default async function ProductDetailsPage({ params }: Props) {
 
   const product = await prisma.product.findUnique({
     where: { slug },
-    select: { genericId: true, brandId: true, slug: true },
+    include: {
+      generic: true,
+      brand: true,
+      stock: true,
+    },
   });
 
   if (!product) notFound();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
       <Suspense fallback={<div className="h-4 bg-gray-200 rounded w-48 mb-6 animate-pulse" />}>
         <ProductBreadcrumb slug={slug} />
       </Suspense>
 
       <Suspense fallback={<ProductDetailsSkeleton />}>
-        <ProductDetails slug={slug} />
+        <ProductDetailsClient product={product} />
       </Suspense>
 
       <Suspense fallback={<SliderSkeleton title="Similar Products" />}>
@@ -250,7 +177,7 @@ export default async function ProductDetailsPage({ params }: Props) {
   );
 }
 
-// Simple skeleton components (add to the same file)
+// Skeleton components
 function ProductDetailsSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
