@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
@@ -39,7 +39,6 @@ interface PurchaseItem {
   nextPurchasePrice?: number;
 }
 
-// Helper to round to 2 decimals
 const roundToTwo = (num: number): number => {
   return Math.round((num + Number.EPSILON) * 100) / 100;
 };
@@ -47,7 +46,6 @@ const roundToTwo = (num: number): number => {
 export default function AddPurchasePage() {
   const router = useRouter();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [products, setProducts] = useState<ProductOption[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentStatus, setPaymentStatus] = useState<"PAID" | "DUE">("DUE");
@@ -59,11 +57,15 @@ export default function AddPurchasePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState<ProductOption[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Debounce timer ref
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchSuppliers();
-    fetchProducts();
+
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
@@ -73,30 +75,47 @@ export default function AddPurchasePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredProducts([]);
-    } else {
-      const term = searchTerm.toLowerCase();
-      setFilteredProducts(
-        products.filter(
-          (p) => p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term)
-        )
-      );
-    }
-  }, [searchTerm, products]);
-
   const fetchSuppliers = async () => {
     const res = await fetch("/api/suppliers");
     const data = await res.json();
     setSuppliers(data);
   };
 
-  const fetchProducts = async () => {
-    const res = await fetch("/api/products-for-purchase");
-    const data = await res.json();
-    setProducts(data);
-  };
+  // Fetch suggestions from the API with debounce
+  const fetchSuggestions = useCallback(async (term: string) => {
+    if (!term || term.trim().length < 2) {
+      setFilteredProducts([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const res = await fetch("/api/products/search-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: term }),
+      });
+      if (!res.ok) throw new Error("Search failed");
+      const data = await res.json();
+      setFilteredProducts(data.products || []);
+    } catch (error) {
+      console.error(error);
+      toast.error("Search failed");
+      setFilteredProducts([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced effect
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      fetchSuggestions(searchTerm);
+    }, 300); // 300ms debounce
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchTerm, fetchSuggestions]);
 
   const addProductFromSuggestion = (product: ProductOption) => {
     if (items.some((item) => item.productId === product.id)) {
@@ -137,7 +156,7 @@ export default function AddPurchasePage() {
     if (isNaN(numericValue)) numericValue = 0;
 
     if (field === "quantity") {
-      updated[index].quantity = Math.floor(numericValue); // quantity must be integer
+      updated[index].quantity = Math.floor(numericValue);
     } else if (field === "costPrice") {
       updated[index].costPrice = roundToTwo(numericValue);
     } else if (field === "profitMargin") {
@@ -148,12 +167,10 @@ export default function AddPurchasePage() {
       updated[index].nextPurchasePrice = roundToTwo(numericValue);
     }
 
-    // Recalculate derived fields
     const { costPrice, profitMargin } = updated[index];
     updated[index].sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
     updated[index].totalCost = roundToTwo(updated[index].quantity * costPrice);
-    
-    // Auto-update next purchase price only if not manually changed
+
     if (field !== "nextPurchasePrice") {
       updated[index].nextPurchasePrice = roundToTwo(updated[index].sellPrice * (99 - profitMargin) / 100);
     }
@@ -290,7 +307,12 @@ export default function AddPurchasePage() {
               onFocus={() => setShowSuggestions(true)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
             />
-            {showSuggestions && filteredProducts.length > 0 && (
+            {isSearching && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+                Loading suggestions...
+              </div>
+            )}
+            {showSuggestions && !isSearching && filteredProducts.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {filteredProducts.map((product) => (
                   <div
@@ -305,6 +327,11 @@ export default function AddPurchasePage() {
                     <button type="button" className="text-[#0F9D8F] text-sm">+ Add</button>
                   </div>
                 ))}
+              </div>
+            )}
+            {showSuggestions && !isSearching && searchTerm.trim().length >= 2 && filteredProducts.length === 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+                No products found. Try a different search term.
               </div>
             )}
           </div>
