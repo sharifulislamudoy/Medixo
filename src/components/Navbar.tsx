@@ -24,9 +24,10 @@ import {
   XCircle,
   Target,
   CircleDollarSign,
+  Bell, // <-- added
 } from "lucide-react";
 
-// Updated search product type – includes slug
+
 interface SearchProduct {
   id: string;
   slug: string;
@@ -120,19 +121,17 @@ export default function Navbar() {
     return pathname.startsWith(path);
   };
 
-  // Fetch all products once – with error handling and slug
+  // Fetch all products for search (same as before)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
-
-        // Ensure data is an array
         if (Array.isArray(data)) {
           setAllProducts(
             data.map((p: any) => ({
               id: p.id,
-              slug: p.slug,        // 👈 required for navigation
+              slug: p.slug,
               name: p.name,
               brand: p.brand,
             }))
@@ -156,12 +155,9 @@ export default function Navbar() {
       setShowSearchDropdown(false);
       return;
     }
-
     setIsSearching(true);
     setShowSearchDropdown(true);
-
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
     searchTimeoutRef.current = setTimeout(() => {
       const query = searchQuery.toLowerCase();
       const filtered = allProducts
@@ -171,17 +167,15 @@ export default function Navbar() {
             (product.brand?.name && product.brand.name.toLowerCase().includes(query))
         )
         .slice(0, 5);
-
       setSearchResults(filtered);
       setIsSearching(false);
     }, 300);
-
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
   }, [searchQuery, allProducts]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -254,7 +248,6 @@ export default function Navbar() {
     if (searchQuery.trim() !== "") setShowSearchDropdown(true);
   };
 
-  // Navigate using slug
   const handleResultClick = (productSlug: string) => {
     setShowSearchDropdown(false);
     setSearchQuery("");
@@ -370,7 +363,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Right: Install + Login/Avatar */}
+            {/* Right: Install + Ad Link + Login/Avatar */}
             <div className="flex items-center gap-3 flex-shrink-0">
               {!isAppInstalled && isInstallable && (
                 <motion.button
@@ -383,6 +376,17 @@ export default function Navbar() {
                   <Download className="h-5 w-5 relative z-10" />
                   <span className="relative z-10 hidden sm:inline">Download</span>
                 </motion.button>
+              )}
+
+              {/* Advertisement icon (shown for all logged-in users) */}
+              {session && (
+                <Link
+                  href="/advertisement"
+                  className="relative p-2 rounded-lg text-gray-600 hover:text-[#156A98] hover:bg-[#156A98]/10 transition-colors"
+                  aria-label="Advertisements"
+                >
+                  <Bell className="h-6 w-6" />
+                </Link>
               )}
 
               {status === "loading" ? (
@@ -528,12 +532,10 @@ export default function Navbar() {
                     {searchResults.map((product) => (
                       <li key={product.id}>
                         <button
-                          onClick={() => handleResultClick(product.slug)} // 👈 use slug
+                          onClick={() => handleResultClick(product.slug)}
                           className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group"
                         >
-                          <span className="text-gray-700 group-hover:text-[#0F9D8F]">
-                            {product.name}
-                          </span>
+                          <span className="text-gray-700 group-hover:text-[#0F9D8F]">{product.name}</span>
                           {product.brand?.name && (
                             <span className="text-sm text-gray-400">{product.brand.name}</span>
                           )}

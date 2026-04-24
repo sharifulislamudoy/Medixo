@@ -11,7 +11,9 @@ import Image from "next/image";
 interface Ad {
   id: string;
   title: string;
+  slug: string;
   imageUrl: string;
+  category: string;
   hyperlink?: string;
 }
 
@@ -35,29 +37,34 @@ export default function HeroSection() {
         loop
         className="h-full"
       >
-        {ads.map((ad) => (
-          <SwiperSlide key={ad.id}>
-            <div className="relative w-full h-[200px] md:h-[300px] lg:h-[450px] 2xl:h-[700px]">
-              <Image
-                src={ad.imageUrl}
-                alt={ad.title}
-                fill
-                className="object-cover object-center"
-                priority
-              />
-              <div className="absolute inset-0 bg-black/5 flex flex-col justify-end p-4 md:p-8">
-                {ad.hyperlink && (
+        {ads.map((ad) => {
+          const detailLink =
+            ad.category === "ANNOUNCEMENT"
+              ? `/advertisement/${ad.slug}`
+              : ad.hyperlink || "#";
+
+          return (
+            <SwiperSlide key={ad.id}>
+              <div className="relative w-full h-[200px] md:h-[300px] lg:h-[450px] 2xl:h-[700px]">
+                <Image
+                  src={ad.imageUrl}
+                  alt={ad.title}
+                  fill
+                  className="object-cover object-center"
+                  priority
+                />
+                <div className="absolute inset-0 bg-black/5 flex flex-col justify-end p-4 md:p-8">
                   <Link
-                    href={ad.hyperlink}
+                    href={detailLink}
                     className="mt-4 self-end text-xs md:text-sm lg:text-lg bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-4 py-2 md:px-5 md:py-3 lg:px-8 rounded hover:shadow-lg transition-all duration-300"
                   >
                     View Details
                   </Link>
-                )}
+                </div>
               </div>
-            </div>
-          </SwiperSlide>
-        ))}
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
     </div>
   );

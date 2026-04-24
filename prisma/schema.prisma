@@ -50,38 +50,43 @@ enum PaymentStatus {
 }
 
 model User {
-  id                String        @id @default(cuid())
-  name              String
-  email             String        @unique
-  phone             String        @unique
-  password          String
-  address           String
-  shopName          String?
-  role              Role          @default(SHOP_OWNER)
-  status            UserStatus    @default(PENDING)
-  createdAt         DateTime      @default(now())
-  orders            Order[]
-  areaId            String?
-  area              Area?         @relation(fields: [areaId], references: [id])
-  vehicle           String?
-  deliveryCodeId    String?
-  deliveryCode      DeliveryCode? @relation(fields: [deliveryCodeId], references: [id])
-  bankAccountNumber String?
-  bankBranch        String?
-  accountHolderName String?
-  purchases         Purchase[]
+  id                     String                  @id @default(cuid())
+  name                   String
+  email                  String                  @unique
+  phone                  String                  @unique
+  password               String
+  address                String
+  shopName               String?
+  role                   Role                    @default(SHOP_OWNER)
+  status                 UserStatus              @default(PENDING)
+  createdAt              DateTime                @default(now())
+  orders                 Order[]
+  areaId                 String?
+  area                   Area?                   @relation(fields: [areaId], references: [id])
+  vehicle                String?
+  deliveryCodeId         String?
+  deliveryCode           DeliveryCode?           @relation(fields: [deliveryCodeId], references: [id])
+  bankAccountNumber      String?
+  bankBranch             String?
+  accountHolderName      String?
+  purchases              Purchase[]
   procurementAssignments ProcurementAssignment[]
 }
 
+// prisma/schema.prisma
+
 model Advertisement {
-  id        String   @id @default(cuid())
-  title     String
-  imageUrl  String
-  category  String // "ANNOUNCEMENT" | "PRODUCT"
-  hyperlink String?
-  isVisible Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique 
+  imageUrl     String   
+  detailImage  String?  
+  description  String?  @db.Text 
+  category     String   
+  hyperlink    String?  
+  isVisible    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model PromotionModal {
@@ -117,30 +122,30 @@ model Brand {
 }
 
 model Product {
-  id                String          @id @default(cuid())
+  id                String            @id @default(cuid())
   name              String
-  slug              String          @unique
+  slug              String            @unique
   category          ProductCategory
-  sku               String          @unique
+  sku               String            @unique
   mrp               Float
   genericId         String?
-  generic           Generic?        @relation(fields: [genericId], references: [id])
+  generic           Generic?          @relation(fields: [genericId], references: [id])
   brandId           String?
-  brand             Brand?          @relation(fields: [brandId], references: [id])
+  brand             Brand?            @relation(fields: [brandId], references: [id])
   image             String
-  description       String          @db.Text
+  description       String            @db.Text
   sellPrice         Float
   costPrice         Float
   nextPurchasePrice Float?
   profitMargin      Float
-  status            Boolean         @default(true)
-  availability      Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  status            Boolean           @default(true)
+  availability      Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   stock             Stock?
   orderItems        OrderItem[]
   purchaseItems     PurchaseItem[]
-  procurementItems ProcurementItem[]
+  procurementItems  ProcurementItem[]
 }
 
 model Stock {
@@ -261,7 +266,7 @@ model PurchaseItem {
   profitMargin Float
   sellPrice    Float
   totalCost    Float
-   mrp         Float?
+  mrp          Float?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -271,13 +276,13 @@ model PurchaseItem {
 // ... keep existing models (User, Product, Order, etc.)
 
 model Procurement {
-  id            String             @id @default(cuid())
-  prNumber      String             @unique
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  status        Boolean            @default(true)   // active/inactive
-  items         ProcurementItem[]
-  notes         String?            @db.Text
+  id        String            @id @default(cuid())
+  prNumber  String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  status    Boolean           @default(true) // active/inactive
+  items     ProcurementItem[]
+  notes     String?           @db.Text
 }
 
 model ProcurementItem {
@@ -286,28 +291,28 @@ model ProcurementItem {
   procurement      Procurement @relation(fields: [procurementId], references: [id], onDelete: Cascade)
   productId        String
   product          Product     @relation(fields: [productId], references: [id])
-  orderQuantity    Int         // aggregated quantity from selected orders
-  mrp              Float?      // override MRP
-  costPrice        Float?      // override cost price
-  sellPrice        Float?      // override sell price
-  requiredQuantity Int         // editable required quantity
+  orderQuantity    Int // aggregated quantity from selected orders
+  mrp              Float? // override MRP
+  costPrice        Float? // override cost price
+  sellPrice        Float? // override sell price
+  requiredQuantity Int // editable required quantity
   bidding          Boolean     @default(false)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
   assignments ProcurementAssignment[]
 }
 
 model ProcurementAssignment {
-  id                String           @id @default(cuid())
+  id                String          @id @default(cuid())
   procurementItemId String
-  procurementItem   ProcurementItem  @relation(fields: [procurementItemId], references: [id], onDelete: Cascade)
+  procurementItem   ProcurementItem @relation(fields: [procurementItemId], references: [id], onDelete: Cascade)
   supplierId        String
-  supplier          User             @relation(fields: [supplierId], references: [id])
+  supplier          User            @relation(fields: [supplierId], references: [id])
   quantity          Int
   costPrice         Float
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@unique([procurementItemId, supplierId])
 }
