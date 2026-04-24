@@ -146,6 +146,7 @@ model Product {
   orderItems        OrderItem[]
   purchaseItems     PurchaseItem[]
   procurementItems  ProcurementItem[]
+  homeSectionProducts HomeSectionProduct[]
 }
 
 model Stock {
@@ -322,4 +323,30 @@ model SiteSettings {
   minFirstOrderAmount Float     @default(0)
   orderOffStart       DateTime?
   orderOffEnd         DateTime?
+}
+
+model HomeSection {
+  id                    String              @id @default(cuid())
+  title                 String
+  description           String?             @db.Text
+  isVisible             Boolean             @default(true)
+  shuffleIntervalMinutes Int                @default(60)
+  lastShuffledAt        DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  products              HomeSectionProduct[]
+}
+
+model HomeSectionProduct {
+  id          String      @id @default(cuid())
+  sectionId   String
+  section     HomeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([sectionId, sortOrder])
+  @@index([sectionId])
 }
