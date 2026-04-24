@@ -9,7 +9,7 @@ export default function InitialLoader({ children }: { children: React.ReactNode 
     // Hide the spinner after a short delay – adjust the duration as needed
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 2000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);

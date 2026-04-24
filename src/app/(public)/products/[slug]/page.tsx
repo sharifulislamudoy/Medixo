@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth"; // adjust import path as needed
 import ProductDetailsClient from "./ProductDetailsClient";
 import ProductSliderWrapper from "@/components/products/ProductSliderWrapper";
 
@@ -141,8 +143,15 @@ async function SuggestedProducts({ brandId, genericId, currentSlug }: { brandId:
   );
 }
 
-// ---------- PAGE COMPONENT ----------
+// ---------- PAGE COMPONENT (PROTECTED) ----------
 export default async function ProductDetailsPage({ params }: Props) {
+  // 🔒 PROTECT ROUTE: redirect if not logged in
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    const errorMessage = encodeURIComponent("Please log in to view product details");
+    redirect(`/login?error=${errorMessage}`);
+  }
+
   const { slug } = await params;
 
   const product = await prisma.product.findUnique({
@@ -177,7 +186,7 @@ export default async function ProductDetailsPage({ params }: Props) {
   );
 }
 
-// Skeleton components
+// Skeleton components (unchanged)
 function ProductDetailsSkeleton() {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">

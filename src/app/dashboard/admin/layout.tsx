@@ -15,6 +15,7 @@ export default function AdminLayout({
     { name: "Dashboard", href: "/dashboard/admin" },
     { name: "Promotion", href: "/dashboard/admin/promotion-modal" },
     { name: "Advertisement", href: "/dashboard/admin/advertisements" },
+    { name: "Marquee", href: "/dashboard/admin/marquee" },
     { name: "Users", href: "/dashboard/admin/users" },
     { name: "Products", href: "/dashboard/admin/products" },
     { name: "Orders", href: "/dashboard/admin/orders" },
@@ -22,7 +23,6 @@ export default function AdminLayout({
     { name: "Biding", href: "/dashboard/admin/biding" },
     { name: "Delivery Route", href: "/dashboard/admin/delivery-route" },
     { name: "Shipment", href: "/dashboard/admin/delivery-shipment" },
-    { name: "Announcement", href: "/dashboard/admin/marquee" },
     { name: "Delivery Boys", href: "/dashboard/admin/delivery-boy" },
     { name: "Purchases", href: "/dashboard/admin/list-purchases" },
     
