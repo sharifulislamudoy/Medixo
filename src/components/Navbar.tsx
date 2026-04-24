@@ -24,7 +24,7 @@ import {
   XCircle,
   Target,
   CircleDollarSign,
-  Bell, // <-- added
+  Bell,
 } from "lucide-react";
 
 
@@ -363,21 +363,8 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Right: Install + Ad Link + Login/Avatar */}
+            {/* Right: Install (removed from here) + Ad Link + Login/Avatar */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              {!isAppInstalled && isInstallable && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleInstall}
-                  className="relative group bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 flex items-center gap-2 overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                  <Download className="h-5 w-5 relative z-10" />
-                  <span className="relative z-10 hidden sm:inline">Download</span>
-                </motion.button>
-              )}
-
               {/* Advertisement icon (shown for all logged-in users) */}
               {session && (
                 <Link
@@ -457,6 +444,20 @@ export default function Navbar() {
                             <User className="h-4 w-4" />
                             Dashboard
                           </Link>
+                        )}
+
+                        {/* Install App button inside dropdown (only shown when installable and not installed) */}
+                        {isInstallable && !isAppInstalled && (
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              handleInstall();
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#156A98] hover:bg-[#156A98]/10 transition-colors duration-200"
+                          >
+                            <Download className="h-4 w-4" />
+                            Install App
+                          </button>
                         )}
 
                         <button
