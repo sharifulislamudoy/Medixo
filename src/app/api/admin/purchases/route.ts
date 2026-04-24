@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { supplierId, purchaseDate, paymentStatus, notes, items, updateProductDefaults } = body;
+  const { supplierId, purchaseDate, paymentStatus, paidAmount, notes, items, updateProductDefaults } = body;
 
   if (!supplierId || !items || items.length === 0) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -55,6 +55,18 @@ export async function POST(req: Request) {
         totalAmount += item.quantity * item.costPrice;
       }
 
+      // Validate paidAmount based on status
+      let finalPaid = 0;
+      if (paymentStatus === "PAID") {
+        finalPaid = totalAmount;
+      } else if (paymentStatus === "PARTIAL_PAID") {
+        const p = parseFloat(paidAmount);
+        if (isNaN(p) || p <= 0 || p >= totalAmount) {
+          throw new Error("Paid amount must be greater than 0 and less than total");
+        }
+        finalPaid = p;
+      } // else DUE -> 0
+
       const purchase = await tx.purchase.create({
         data: {
           purchaseNo,
@@ -62,6 +74,7 @@ export async function POST(req: Request) {
           purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date(),
           paymentStatus: paymentStatus || "DUE",
           totalAmount,
+          paidAmount: finalPaid,
           notes: notes || null,
         },
       });
@@ -78,7 +91,7 @@ export async function POST(req: Request) {
             quantity,
             costPrice,
             profitMargin,
-            costMargin: costMargin ?? null,   // 👈 store cost margin
+            costMargin: costMargin ?? null,
             sellPrice,
             totalCost,
             mrp: mrp || null,
@@ -97,7 +110,7 @@ export async function POST(req: Request) {
             data: {
               costPrice,
               profitMargin,
-              costMargin: costMargin ?? profitMargin,  // 👈 default to profitMargin if not given
+              costMargin: costMargin ?? profitMargin,
               sellPrice,
               nextPurchasePrice: nextPurchasePrice ?? null,
               mrp: mrp ?? undefined,
@@ -108,8 +121,8 @@ export async function POST(req: Request) {
       return purchase;
     });
     return NextResponse.json(result, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to create purchase" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to create purchase" }, { status: 500 });
   }
 }

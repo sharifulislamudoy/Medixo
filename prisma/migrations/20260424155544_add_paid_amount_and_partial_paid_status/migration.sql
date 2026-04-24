@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "PaymentStatus" ADD VALUE 'PARTIAL_PAID';
+
+-- AlterTable
+ALTER TABLE "Purchase" ADD COLUMN     "paidAmount" DOUBLE PRECISION NOT NULL DEFAULT 0;

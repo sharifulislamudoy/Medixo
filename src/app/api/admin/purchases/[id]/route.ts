@@ -51,7 +51,7 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const { supplierId, purchaseDate, paymentStatus, notes, items, updateProductDefaults } = body;
+  const { supplierId, purchaseDate, paymentStatus, paidAmount, notes, items, updateProductDefaults } = body;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -76,6 +76,18 @@ export async function PUT(
         totalAmount += item.quantity * item.costPrice;
       }
 
+      // Validate paid amount
+      let finalPaid = 0;
+      if (paymentStatus === "PAID") {
+        finalPaid = totalAmount;
+      } else if (paymentStatus === "PARTIAL_PAID") {
+        const p = parseFloat(paidAmount);
+        if (isNaN(p) || p <= 0 || p >= totalAmount) {
+          throw new Error("Paid amount must be greater than 0 and less than total");
+        }
+        finalPaid = p;
+      } // else DUE -> 0
+
       const updatedPurchase = await tx.purchase.update({
         where: { id },
         data: {
@@ -83,6 +95,7 @@ export async function PUT(
           purchaseDate: new Date(purchaseDate),
           paymentStatus,
           totalAmount,
+          paidAmount: finalPaid,
           notes: notes || null,
         },
       });
@@ -128,9 +141,9 @@ export async function PUT(
       return updatedPurchase;
     });
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to update purchase" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to update purchase" }, { status: 500 });
   }
 }
 

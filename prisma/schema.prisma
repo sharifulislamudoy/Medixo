@@ -46,6 +46,7 @@ enum OrderStatus {
 
 enum PaymentStatus {
   DUE
+  PARTIAL_PAID
   PAID
 }
 
@@ -136,7 +137,7 @@ model Product {
   costPrice         Float
   nextPurchasePrice Float?
   profitMargin      Float
-  costMargin        Float? // 👈 NEW: margin used for next‑purchase deduction
+  costMargin        Float? 
   status            Boolean           @default(true)
   availability      Boolean           @default(true)
   createdAt         DateTime          @default(now())
@@ -248,6 +249,7 @@ model Purchase {
   purchaseDate  DateTime       @default(now())
   paymentStatus PaymentStatus  @default(DUE)
   totalAmount   Float
+  paidAmount    Float          @default(0)
   notes         String?        @db.Text
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

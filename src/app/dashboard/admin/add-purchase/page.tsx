@@ -20,7 +20,7 @@ interface ProductOption {
   mrp: number;
   costPrice: number;
   profitMargin: number;
-  costMargin?: number;            // 👈 NEW
+  costMargin?: number;
   sellPrice: number;
   stock: number;
   image: string;
@@ -34,7 +34,7 @@ interface PurchaseItem {
   quantity: number;
   costPrice: number;
   profitMargin: number;
-  costMargin: number;             // 👈 NEW
+  costMargin: number;
   sellPrice: number;
   totalCost: number;
   mrp: number;
@@ -50,7 +50,8 @@ export default function AddPurchasePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
-  const [paymentStatus, setPaymentStatus] = useState<"PAID" | "DUE">("DUE");
+  const [paymentStatus, setPaymentStatus] = useState<"DUE" | "PARTIAL_PAID" | "PAID">("DUE");
+  const [paidAmount, setPaidAmount] = useState<number>(0);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [updateProductDefaults, setUpdateProductDefaults] = useState(false);
@@ -123,9 +124,8 @@ export default function AddPurchasePage() {
     }
     const costPrice = product.nextPurchasePrice ?? product.costPrice;
     const profitMargin = product.profitMargin;
-    const costMargin = product.costMargin ?? profitMargin;   // 👈 default to profitMargin
+    const costMargin = product.costMargin ?? profitMargin;
     const sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
-    // nextPurchasePrice using costMargin: sellPrice * (1 - costMargin/100)
     const nextPurchasePrice = roundToTwo(sellPrice * (1 - costMargin / 100));
 
     setItems([
@@ -163,8 +163,7 @@ export default function AddPurchasePage() {
       updated[index].costPrice = roundToTwo(numericValue);
     } else if (field === "profitMargin") {
       updated[index].profitMargin = numericValue;
-      // Auto‑sync costMargin when profitMargin changes
-      updated[index].costMargin = numericValue;
+      updated[index].costMargin = numericValue; // auto-sync
     } else if (field === "costMargin") {
       updated[index].costMargin = numericValue;
     } else if (field === "mrp") {
@@ -176,8 +175,6 @@ export default function AddPurchasePage() {
     const { costPrice, profitMargin, costMargin } = updated[index];
     updated[index].sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
     updated[index].totalCost = roundToTwo(updated[index].quantity * costPrice);
-
-    // Next purchase price = sell price reduced by costMargin %
     updated[index].nextPurchasePrice = roundToTwo(
       updated[index].sellPrice * (1 - costMargin / 100)
     );
@@ -188,6 +185,15 @@ export default function AddPurchasePage() {
   const getTotalAmount = () => {
     return items.reduce((sum, item) => sum + item.totalCost, 0);
   };
+
+  // Update paid amount when total changes and status is PAID
+  useEffect(() => {
+    if (paymentStatus === "PAID") {
+      setPaidAmount(getTotalAmount());
+    } else if (paymentStatus === "DUE") {
+      setPaidAmount(0);
+    }
+  }, [paymentStatus, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +212,13 @@ export default function AddPurchasePage() {
       }
     }
 
+    if (paymentStatus === "PARTIAL_PAID") {
+      if (paidAmount <= 0 || paidAmount >= getTotalAmount()) {
+        toast.error("Partial paid amount must be greater than 0 and less than total");
+        return;
+      }
+    }
+
     setLoading(true);
     const toastId = toast.loading("Creating purchase...");
     try {
@@ -216,24 +229,28 @@ export default function AddPurchasePage() {
           supplierId: selectedSupplier,
           purchaseDate,
           paymentStatus,
+          paidAmount: paymentStatus === "DUE" ? 0 : paidAmount,
           notes,
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
             costPrice: roundToTwo(item.costPrice),
             profitMargin: item.profitMargin,
-            costMargin: item.costMargin,      // 👈 include
+            costMargin: item.costMargin,
             mrp: roundToTwo(item.mrp),
             nextPurchasePrice: item.nextPurchasePrice ? roundToTwo(item.nextPurchasePrice) : null,
           })),
           updateProductDefaults,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create");
+      }
       toast.success("Purchase created", { id: toastId });
       router.push("/dashboard/admin/list-purchases");
-    } catch (error) {
-      toast.error("Failed to create purchase", { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create purchase", { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -280,13 +297,31 @@ export default function AddPurchasePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
               <select
                 value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value as "PAID" | "DUE")}
+                onChange={(e) => setPaymentStatus(e.target.value as any)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
               >
                 <option value="DUE">Due</option>
+                <option value="PARTIAL_PAID">Partial Paid</option>
                 <option value="PAID">Paid</option>
               </select>
             </div>
+            {paymentStatus === "PARTIAL_PAID" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paid Amount (৳)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
+                  placeholder="Enter paid amount"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Due: ৳{getTotalAmount() - paidAmount}
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
