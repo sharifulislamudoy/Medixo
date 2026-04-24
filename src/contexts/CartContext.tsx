@@ -89,7 +89,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
-    toast.success("Cart cleared");
+    toast.success("Order placed! Cart cleared.");
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);

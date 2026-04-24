@@ -1,3 +1,4 @@
+// app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -10,13 +11,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { items, totalPrice } = await req.json(); // items: { id, quantity }[]
+    const { items, totalPrice } = await req.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
 
-    // Fetch user details including area and delivery code
+    // Fetch site settings
+    const settings = await prisma.siteSettings.findFirst();
+    const cutoffHour = settings?.dailyCutoffHour ?? 11;
+    const cutoffMinute = settings?.dailyCutoffMinute ?? 0;
+    const minFirstOrder = settings?.minFirstOrderAmount ?? 0;
+
+    // Check orders‑off period
+    const now = new Date();
+    if (settings?.orderOffStart && settings?.orderOffEnd) {
+      if (now >= settings.orderOffStart && now <= settings.orderOffEnd) {
+        return NextResponse.json(
+          { error: 'Orders are currently off. Please try again later.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Compute today's cutoff DateTime
+    const todayCutoff = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      cutoffHour,
+      cutoffMinute,
+      0,
+      0
+    );
+
+    // Determine if this order is placed after cutoff
+    const isAfterCutoff = now > todayCutoff;
+
+    // Fetch user details
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -34,21 +66,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Fetch products with stock (optional, we'll handle stock via upsert)
-    const productIds = items.map(i => i.id);
+    // -------------------------------
+    // First‑order‑after‑cutoff check
+    // -------------------------------
+    if (isAfterCutoff && minFirstOrder > 0) {
+      const ordersAfterCutoff = await prisma.order.count({
+        where: {
+          userId: session.user.id,
+          orderDate: { gte: todayCutoff },
+        },
+      });
+
+      if (ordersAfterCutoff === 0 && totalPrice < minFirstOrder) {
+        return NextResponse.json(
+          {
+            error: `The first order placed after the daily cutoff must be at least ৳${minFirstOrder.toFixed(2)}. Please add more items or come back later.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // -------------------------------
+    // Validate products & calculate total
+    // -------------------------------
+    const productIds = items.map((i: any) => i.id);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
     });
-
     const productMap = new Map(products.map(p => [p.id, p]));
 
-    // Validate products and calculate total
     let calculatedTotal = 0;
-    const orderItemsData = items.map(item => {
+    const orderItemsData = items.map((item: any) => {
       const product = productMap.get(item.id);
-      if (!product) {
-        throw new Error(`Product ${item.id} not found`);
-      }
+      if (!product) throw new Error(`Product ${item.id} not found`);
       if (!product.status || !product.availability) {
         throw new Error(`Product ${product.name} is not available`);
       }
@@ -65,7 +116,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Total price mismatch' }, { status: 400 });
     }
 
-    // Generate invoice number
+    // -------------------------------
+    // Invoice number generation
+    // -------------------------------
     const lastOrder = await prisma.order.findFirst({
       orderBy: { invoiceNo: 'desc' },
       select: { invoiceNo: true },
@@ -73,18 +126,16 @@ export async function POST(req: NextRequest) {
     let nextInvoiceNumber = 1;
     if (lastOrder) {
       const lastNum = parseInt(lastOrder.invoiceNo, 10);
-      if (!isNaN(lastNum)) {
-        nextInvoiceNumber = lastNum + 1;
-      }
+      if (!isNaN(lastNum)) nextInvoiceNumber = lastNum + 1;
     }
     const invoiceNo = nextInvoiceNumber.toString().padStart(4, '0');
 
-    // Compute delivery date (unchanged)
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    // -------------------------------
+    // Delivery date calculation
+    // -------------------------------
     let deliveryDate: Date;
-    if (currentHour > 11 || (currentHour === 11 && currentMinute > 0)) {
+    if (isAfterCutoff) {
+      // After cutoff → next day delivery
       deliveryDate = new Date(now);
       deliveryDate.setDate(now.getDate() + 1);
     } else {
@@ -94,7 +145,9 @@ export async function POST(req: NextRequest) {
 
     const deliveryCodeId = user.area?.deliveryCode?.id || null;
 
-    // Create order and items, update stock using upsert
+    // -------------------------------
+    // Create order & update stock
+    // -------------------------------
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
@@ -113,17 +166,11 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Update stock – create if missing, then decrement
       for (const item of items) {
         await tx.stock.upsert({
           where: { productId: item.id },
-          update: {
-            quantity: { decrement: item.quantity },
-          },
-          create: {
-            productId: item.id,
-            quantity: -item.quantity, // initial stock is 0, so after order it's negative
-          },
+          update: { quantity: { decrement: item.quantity } },
+          create: { productId: item.id, quantity: -item.quantity },
         });
       }
 
@@ -141,18 +188,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: any) {
     console.error('Order creation error:', error);
-
-    // Return more specific error messages if possible
-    if (error.message?.startsWith('Product')) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error.code === 'P2025') {
-      return NextResponse.json(
-        { error: 'Stock record not found for one or more products' },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

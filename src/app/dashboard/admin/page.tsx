@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ResetStoreButton from "@/components/admin/ResetStoreButton";
 import SetCutoffTimeButton from "@/components/admin/SetCutoffTimeButton";
 import DispatchButton from "@/components/admin/DispatchButton";
+import SetCutoffordertimebutton from "@/components/admin/orders/SetCutoffordertimebutton";
 
 export default async function AdminDashboardHome() {
   const session = await getServerSession(authOptions);
@@ -44,6 +45,7 @@ export default async function AdminDashboardHome() {
           <ResetStoreButton />
           <SetCutoffTimeButton />
           <DispatchButton processingCount={processingOrders} />
+          <SetCutoffordertimebutton />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
+// CheckoutPage.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import Image from 'next/image';
@@ -8,6 +9,14 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+
+interface SiteSettings {
+  dailyCutoffHour: number;
+  dailyCutoffMinute: number;
+  minFirstOrderAmount: number;
+  orderOffStart: string | null; // ISO date
+  orderOffEnd: string | null;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,6 +29,16 @@ export default function CheckoutPage() {
     trCode: string | null;
     deliveryCode: string | null;
   } | null>(null);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [showOffModal, setShowOffModal] = useState(false);
+
+  // Fetch site settings on mount
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(() => toast.error('Could not load settings'));
+  }, []);
 
   // Redirect if not authenticated
   if (status === 'unauthenticated') {
@@ -27,34 +46,33 @@ export default function CheckoutPage() {
     return null;
   }
 
-  // No discount applied
+  // Determine if orders are currently off
+  useEffect(() => {
+    if (!settings?.orderOffStart || !settings?.orderOffEnd) return;
+    const now = new Date();
+    const start = new Date(settings.orderOffStart);
+    const end = new Date(settings.orderOffEnd);
+    setShowOffModal(now >= start && now <= end);
+  }, [settings]);
+
+  // Discount removed
   const discount = 0;
   const finalTotal = totalPrice;
-  const payableTotal = Math.round(finalTotal); // optional rounding, can remove if not needed
+  const payableTotal = Math.round(finalTotal);
 
-  // Calculate delivery date based on current time
+  // Delivery date based on cutoff
   const getDeliveryDate = (): string => {
+    if (!settings) return '';
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    if (currentHour > 11 || (currentHour === 11 && currentMinute > 0)) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      return tomorrow.toLocaleDateString('bn-BD', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } else {
-      return now.toLocaleDateString('bn-BD', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    }
+    const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate(), settings.dailyCutoffHour, settings.dailyCutoffMinute, 0, 0);
+    const isAfterCutoff = now > cutoff;
+    const target = isAfterCutoff ? new Date(now.getTime() + 86400000) : now; // +1 day only after cutoff
+    return target.toLocaleDateString('bn-BD', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   const deliveryDate = getDeliveryDate();
@@ -129,7 +147,6 @@ export default function CheckoutPage() {
               <span className="text-gray-600">Subtotal</span>
               <span className="text-right font-medium text-gray-800">৳{totalPrice.toFixed(2)}</span>
             </div>
-            {/* Discount row removed */}
             <div className="grid grid-cols-2 font-semibold border-t border-gray-200 pt-2">
               <span>Total</span>
               <span className="text-right text-[#0F9D8F]">৳{payableTotal}</span>
@@ -142,7 +159,7 @@ export default function CheckoutPage() {
           </div>
           <button
             onClick={handlePlaceOrder}
-            disabled={isPlacingOrder}
+            disabled={isPlacingOrder || showOffModal}
             className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
           >
             {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
@@ -152,7 +169,6 @@ export default function CheckoutPage() {
 
       {/* Main content grid */}
       <div className="grid md:grid-cols-3 gap-8">
-        {/* Left: Items in your order */}
         <div className="md:col-span-2">
           <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Items in your order</h2>
@@ -160,21 +176,14 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4">
                   <div className="relative w-16 h-16 flex-shrink-0">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-contain rounded"
-                    />
+                    <Image src={item.image} alt={item.name} fill className="object-contain rounded" />
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-800">{item.name}</p>
                     <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-[#0F9D8F]">
-                      ৳{(item.price * item.quantity).toFixed(2)}
-                    </p>
+                    <p className="font-semibold text-[#0F9D8F]">৳{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -182,7 +191,6 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Desktop Order Summary */}
         <div className="hidden md:block md:col-span-1">
           <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
@@ -195,7 +203,6 @@ export default function CheckoutPage() {
                 <span className="text-gray-600">Subtotal</span>
                 <span className="text-right font-medium text-gray-800">৳{totalPrice.toFixed(2)}</span>
               </div>
-              {/* Discount row removed */}
               <div className="grid grid-cols-2 font-semibold border-t border-gray-200 pt-2">
                 <span>Total</span>
                 <span className="text-right text-[#0F9D8F]">৳{finalTotal.toFixed(2)}</span>
@@ -216,7 +223,7 @@ export default function CheckoutPage() {
             </div>
             <button
               onClick={handlePlaceOrder}
-              disabled={isPlacingOrder}
+              disabled={isPlacingOrder || showOffModal}
               className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
             >
               {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
@@ -225,9 +232,44 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Success Modal */}
+      {/* Orders Off Modal */}
       <AnimatePresence>
-        {showSuccessModal && (
+        {showOffModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl p-8 z-50 max-w-md w-full text-center"
+            >
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Orders Temporarily Closed</h2>
+              <p className="text-gray-600 mb-2">Sorry, we are not accepting orders right now.</p>
+              {settings?.orderOffEnd && (
+                <p className="text-sm text-gray-500">
+                  Please come back after{' '}
+                  {new Date(settings.orderOffEnd).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                </p>
+              )}
+              <button
+                onClick={() => setShowOffModal(false)}
+                className="mt-6 px-6 py-2 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white rounded-lg"
+              >
+                OK
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Success Modal (unchanged) */}
+      <AnimatePresence>
+        {showSuccessModal && orderDetails && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -244,9 +286,9 @@ export default function CheckoutPage() {
             >
               <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Order Placed Successfully!</h2>
               <div className="space-y-3 text-gray-700">
-                <p><span className="font-semibold">Invoice No:</span> {orderDetails?.invoiceNo}</p>
-                <p><span className="font-semibold">TR Code:</span> {orderDetails?.trCode || '—'}</p>
-                <p><span className="font-semibold">Delivery Code:</span> {orderDetails?.deliveryCode || '—'}</p>
+                <p><span className="font-semibold">Invoice No:</span> {orderDetails.invoiceNo}</p>
+                <p><span className="font-semibold">TR Code:</span> {orderDetails.trCode || '—'}</p>
+                <p><span className="font-semibold">Delivery Code:</span> {orderDetails.deliveryCode || '—'}</p>
               </div>
               <div className="mt-6 flex justify-center">
                 <button

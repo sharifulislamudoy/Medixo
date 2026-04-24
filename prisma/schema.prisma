@@ -316,3 +316,12 @@ model ProcurementAssignment {
 
   @@unique([procurementItemId, supplierId])
 }
+
+model SiteSettings {
+  id                  Int       @id @default(autoincrement())
+  dailyCutoffHour     Int       @default(11)
+  dailyCutoffMinute   Int       @default(0)
+  minFirstOrderAmount Float     @default(0)
+  orderOffStart       DateTime? // start of "orders off" period
+  orderOffEnd         DateTime? // end of "orders off" period
+}
