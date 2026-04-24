@@ -1,5 +1,6 @@
 import HeroSection from "@/components/HeroSection";
 import HomeSections from "@/components/HomeSections";
+import NewArrivals from "@/components/NewArrivals";
 import PromotionModalViewer from "@/components/PromotionModalViewer";
 
 export default function Home() {
@@ -7,6 +8,7 @@ export default function Home() {
     <div>
       <PromotionModalViewer />
       <HeroSection />
+      <NewArrivals />
       <HomeSections />
     </div>
   );
