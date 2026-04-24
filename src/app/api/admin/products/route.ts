@@ -23,6 +23,7 @@ export async function GET() {
   const mapped = products.map(p => ({
     ...p,
     stock: p.stock?.quantity ?? 0,
+    costMargin: p.costMargin,   // 👈 ensure it's exposed
   }));
 
   return NextResponse.json(mapped);
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
     description,
     costPrice,
     profitMargin,
+    costMargin,       // 👈 NEW
     stock,
   } = await req.json();
 
@@ -56,7 +58,6 @@ export async function POST(req: Request) {
   const sellPrice = cost * (1 + margin / 100);
   const sku = await generateNextSKU();
 
-  // Generate unique slug from product name
   const baseSlug = slugify(name);
   const slug = await generateUniqueSlug(baseSlug, prisma);
 
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
     const newProduct = await tx.product.create({
       data: {
         name,
-        slug,                     // 👈 store the generated slug
+        slug,
         category,
         sku,
         mrp: parseFloat(mrp),
@@ -94,6 +95,7 @@ export async function POST(req: Request) {
         description,
         costPrice: cost,
         profitMargin: margin,
+        costMargin: costMargin ? parseFloat(costMargin) : null,   // 👈 store
         sellPrice,
       },
       include: { generic: true, brand: true },

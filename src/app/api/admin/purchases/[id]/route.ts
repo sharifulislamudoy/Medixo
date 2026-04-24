@@ -88,7 +88,7 @@ export async function PUT(
       });
 
       for (const item of items) {
-        const { productId, quantity, costPrice, profitMargin, mrp, nextPurchasePrice } = item;
+        const { productId, quantity, costPrice, profitMargin, costMargin, mrp, nextPurchasePrice } = item;
         const sellPrice = costPrice * (1 + profitMargin / 100);
         const totalCost = quantity * costPrice;
 
@@ -99,6 +99,7 @@ export async function PUT(
             quantity,
             costPrice,
             profitMargin,
+            costMargin: costMargin ?? null,
             sellPrice,
             totalCost,
             mrp: mrp || null,
@@ -116,6 +117,7 @@ export async function PUT(
             data: {
               costPrice,
               profitMargin,
+              costMargin: costMargin ?? profitMargin,
               sellPrice,
               nextPurchasePrice: nextPurchasePrice ?? null,
               mrp: mrp ?? undefined,

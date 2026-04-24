@@ -20,6 +20,7 @@ interface ProductOption {
   mrp: number;
   costPrice: number;
   profitMargin: number;
+  costMargin?: number;            // 👈 NEW
   sellPrice: number;
   stock: number;
   nextPurchasePrice?: number;
@@ -32,6 +33,7 @@ interface PurchaseItem {
   quantity: number;
   costPrice: number;
   profitMargin: number;
+  costMargin: number;             // 👈 NEW
   sellPrice: number;
   totalCost: number;
   mrp: number;
@@ -131,6 +133,7 @@ export default function EditPurchasePage() {
         quantity: item.quantity,
         costPrice: roundToTwo(item.costPrice),
         profitMargin: item.profitMargin,
+        costMargin: item.costMargin ?? item.profitMargin,   // 👈 fallback
         sellPrice: roundToTwo(item.sellPrice),
         totalCost: roundToTwo(item.totalCost),
         mrp: roundToTwo(item.mrp ?? item.product.mrp),
@@ -154,8 +157,9 @@ export default function EditPurchasePage() {
     }
     const costPrice = product.nextPurchasePrice ?? product.costPrice;
     const profitMargin = product.profitMargin;
+    const costMargin = product.costMargin ?? profitMargin;
     const sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
-    const nextPurchasePrice = roundToTwo(sellPrice * (99 - profitMargin) / 100);
+    const nextPurchasePrice = roundToTwo(sellPrice * (1 - costMargin / 100));
 
     setItems([
       ...items,
@@ -166,6 +170,7 @@ export default function EditPurchasePage() {
         quantity: 1,
         costPrice: roundToTwo(costPrice),
         profitMargin,
+        costMargin,
         sellPrice,
         totalCost: roundToTwo(costPrice),
         mrp: product.mrp,
@@ -191,19 +196,23 @@ export default function EditPurchasePage() {
       updated[index].costPrice = roundToTwo(numericValue);
     } else if (field === "profitMargin") {
       updated[index].profitMargin = numericValue;
+      updated[index].costMargin = numericValue;   // auto‑sync
+    } else if (field === "costMargin") {
+      updated[index].costMargin = numericValue;
     } else if (field === "mrp") {
       updated[index].mrp = roundToTwo(numericValue);
     } else if (field === "nextPurchasePrice") {
       updated[index].nextPurchasePrice = roundToTwo(numericValue);
     }
 
-    const { costPrice, profitMargin } = updated[index];
+    const { costPrice, profitMargin, costMargin } = updated[index];
     updated[index].sellPrice = roundToTwo(costPrice * (1 + profitMargin / 100));
     updated[index].totalCost = roundToTwo(updated[index].quantity * costPrice);
 
-    if (field !== "nextPurchasePrice") {
-      updated[index].nextPurchasePrice = roundToTwo(updated[index].sellPrice * (99 - profitMargin) / 100);
-    }
+    updated[index].nextPurchasePrice = roundToTwo(
+      updated[index].sellPrice * (1 - costMargin / 100)
+    );
+
     setItems(updated);
   };
 
@@ -244,6 +253,7 @@ export default function EditPurchasePage() {
             quantity: item.quantity,
             costPrice: roundToTwo(item.costPrice),
             profitMargin: item.profitMargin,
+            costMargin: item.costMargin,
             mrp: roundToTwo(item.mrp),
             nextPurchasePrice: item.nextPurchasePrice
               ? roundToTwo(item.nextPurchasePrice)
@@ -383,6 +393,7 @@ export default function EditPurchasePage() {
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Qty</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Cost (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Margin %</th>
+                  <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Cost Margin %</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Sell (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">MRP (৳)</th>
                   <th className="px-2 py-2 text-left text-sm font-medium text-gray-700">Total (৳)</th>
@@ -424,6 +435,15 @@ export default function EditPurchasePage() {
                         className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
                       />
                     </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.costMargin}
+                        onChange={(e) => updateItem(idx, "costMargin", e.target.value)}
+                        className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
+                      />
+                    </td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.sellPrice.toFixed(2)}</td>
                     <td className="px-2 py-2">
                       <input
@@ -435,16 +455,7 @@ export default function EditPurchasePage() {
                       />
                     </td>
                     <td className="px-2 py-2 text-sm text-gray-900">{item.totalCost.toFixed(2)}</td>
-                    <td className="px-2 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.nextPurchasePrice?.toFixed(2) ?? ""}
-                        onChange={(e) => updateItem(idx, "nextPurchasePrice", e.target.value)}
-                        className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none"
-                        placeholder="Auto"
-                      />
-                    </td>
+                    <td className="px-2 py-2 text-sm text-gray-900">{item.nextPurchasePrice?.toFixed(2) ?? ""}</td>
                     <td className="px-2 py-2">
                       <button
                         type="button"
@@ -476,7 +487,7 @@ export default function EditPurchasePage() {
               className="rounded border-gray-300 text-[#0F9D8F] focus:ring-[#0F9D8F]"
             />
             <label htmlFor="updateDefaults" className="text-sm text-gray-700">
-              Update product's default cost price, profit margin & MRP with these values
+              Update product's default cost price, profit margin, cost margin & MRP with these values
             </label>
           </div>
         </div>

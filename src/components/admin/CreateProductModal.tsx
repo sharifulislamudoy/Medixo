@@ -38,7 +38,8 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
     image: "",
     description: "",
     costPrice: "",
-    profitMargin: "",      // 👈 NEW field
+    profitMargin: "",
+    costMargin: "",      // 👈 NEW
     stock: "",
   });
 
@@ -48,7 +49,6 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
   const [genericSuggestions, setGenericSuggestions] = useState<string[]>([]);
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
 
-  // 👇 computed sell price
   const computedSellPrice = (): string => {
     const cost = parseFloat(form.costPrice);
     const margin = parseFloat(form.profitMargin);
@@ -118,7 +118,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),   // includes profitMargin, no sellPrice
+        body: JSON.stringify(form),   // includes costMargin
       });
 
       if (!res.ok) throw new Error("Failed to create");
@@ -136,6 +136,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
         description: "",
         costPrice: "",
         profitMargin: "",
+        costMargin: "",
         stock: "",
       });
     } catch (error) {
@@ -310,6 +311,20 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess }: Props
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
               required
+            />
+          </div>
+
+          {/* Cost Margin (new) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cost Margin (%)</label>
+            <input
+              type="number"
+              min="0"
+              name="costMargin"
+              value={form.costMargin}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
+              placeholder="Optional, defaults to profit margin if empty"
             />
           </div>
 

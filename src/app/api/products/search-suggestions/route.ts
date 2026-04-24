@@ -40,10 +40,8 @@ Return only the JSON array, nothing else.`;
       console.error("Groq query expansion failed:", err);
     }
 
-    // Always include original query, plus AI suggestions if any
     const searchTerms = [trimmedQuery, ...suggestions].filter(Boolean);
 
-    // ---------- First attempt: exact/contains search with expanded terms ----------
     const nameConditions = searchTerms.map((term) => ({
       name: { contains: term, mode: "insensitive" as const },
     }));
@@ -63,6 +61,7 @@ Return only the JSON array, nothing else.`;
         mrp: true,
         costPrice: true,
         profitMargin: true,
+        costMargin: true,          // 👈 NEW
         sellPrice: true,
         stock: { select: { quantity: true } },
         nextPurchasePrice: true,
@@ -71,9 +70,7 @@ Return only the JSON array, nothing else.`;
       take: 20,
     });
 
-    // ---------- Fallback: fuzzy search with fuse.js if no results ----------
     if (products.length === 0) {
-      // Fetch all active product names (only needed data for fuse)
       const allProducts = await prisma.product.findMany({
         where: { status: true },
         select: {
@@ -84,7 +81,7 @@ Return only the JSON array, nothing else.`;
 
       const fuse = new Fuse(allProducts, {
         keys: ["name"],
-        threshold: 0.4,        // 0 = strict, 1 = loose
+        threshold: 0.4,
         includeScore: true,
       });
 
@@ -92,7 +89,6 @@ Return only the JSON array, nothing else.`;
       const matchedIds = fuseResults.map(r => r.item.id);
 
       if (matchedIds.length > 0) {
-        // Fetch full product details for the fuzzy matches
         products = await prisma.product.findMany({
           where: {
             id: { in: matchedIds },
@@ -105,6 +101,7 @@ Return only the JSON array, nothing else.`;
             mrp: true,
             costPrice: true,
             profitMargin: true,
+            costMargin: true,      // 👈 NEW
             sellPrice: true,
             stock: { select: { quantity: true } },
             nextPurchasePrice: true,
@@ -112,7 +109,6 @@ Return only the JSON array, nothing else.`;
           },
           take: 20,
         });
-        // Sort them back to fuse order
         const idToProduct = Object.fromEntries(products.map(p => [p.id, p]));
         products = matchedIds.map(id => idToProduct[id]).filter(Boolean);
       }
@@ -125,6 +121,7 @@ Return only the JSON array, nothing else.`;
       mrp: p.mrp,
       costPrice: p.costPrice,
       profitMargin: p.profitMargin,
+      costMargin: p.costMargin,          // 👈 NEW
       sellPrice: p.sellPrice,
       stock: p.stock?.quantity ?? 0,
       nextPurchasePrice: p.nextPurchasePrice,

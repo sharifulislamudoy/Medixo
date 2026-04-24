@@ -13,11 +13,18 @@ export async function GET() {
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
   try {
     const purchases = await prisma.purchase.findMany({
       include: {
         supplier: { select: { id: true, name: true, shopName: true, phone: true } },
-        items: { include: { product: true } },
+        items: {
+          include: {
+            product: {
+              select: { id: true, name: true, sku: true, image: true }
+            }
+          }
+        }
       },
       orderBy: [{ purchaseDate: "desc" }, { createdAt: "desc" }],
     });
@@ -60,7 +67,7 @@ export async function POST(req: Request) {
       });
 
       for (const item of items) {
-        const { productId, quantity, costPrice, profitMargin, mrp, nextPurchasePrice } = item;
+        const { productId, quantity, costPrice, profitMargin, costMargin, mrp, nextPurchasePrice } = item;
         const sellPrice = costPrice * (1 + profitMargin / 100);
         const totalCost = quantity * costPrice;
 
@@ -71,9 +78,10 @@ export async function POST(req: Request) {
             quantity,
             costPrice,
             profitMargin,
+            costMargin: costMargin ?? null,   // 👈 store cost margin
             sellPrice,
             totalCost,
-            mrp: mrp || null,   // 👈 store MRP
+            mrp: mrp || null,
           },
         });
 
@@ -89,9 +97,10 @@ export async function POST(req: Request) {
             data: {
               costPrice,
               profitMargin,
+              costMargin: costMargin ?? profitMargin,  // 👈 default to profitMargin if not given
               sellPrice,
               nextPurchasePrice: nextPurchasePrice ?? null,
-              mrp: mrp ?? undefined,   // 👈 update product MRP if provided
+              mrp: mrp ?? undefined,
             },
           });
         }

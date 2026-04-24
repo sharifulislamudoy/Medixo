@@ -25,12 +25,12 @@ export async function PUT(
     description,
     costPrice,
     profitMargin,
+    costMargin,         // 👈 NEW
     status,
     availability,
     stock,
   } = body;
 
-  // Handle generic upsert
   let genericId = undefined;
   if (genericName !== undefined) {
     if (genericName) {
@@ -45,7 +45,6 @@ export async function PUT(
     }
   }
 
-  // Handle brand upsert
   let brandId = undefined;
   if (brandName !== undefined) {
     if (brandName) {
@@ -64,7 +63,6 @@ export async function PUT(
     const currentProduct = await tx.product.findUnique({ where: { id } });
     if (!currentProduct) throw new Error("Product not found");
 
-    // Generate new slug only if the name changed
     let slug = currentProduct.slug;
     if (name && name !== currentProduct.name) {
       const baseSlug = slugify(name);
@@ -79,7 +77,7 @@ export async function PUT(
       where: { id },
       data: {
         name,
-        slug,                               // 👈 update slug if name changed
+        slug,
         category,
         mrp: mrp ? parseFloat(mrp) : undefined,
         genericId,
@@ -88,6 +86,7 @@ export async function PUT(
         description,
         costPrice: costPrice !== undefined ? parseFloat(costPrice) : undefined,
         profitMargin: profitMargin !== undefined ? parseFloat(profitMargin) : undefined,
+        costMargin: costMargin !== undefined ? parseFloat(costMargin) : undefined,  // 👈 update
         sellPrice: computedSellPrice,
         status: status !== undefined ? status : undefined,
         availability: availability !== undefined ? availability : undefined,

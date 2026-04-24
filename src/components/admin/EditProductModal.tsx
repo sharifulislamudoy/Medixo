@@ -33,7 +33,8 @@ interface Product {
   description: string;
   sellPrice: number;
   costPrice: number;
-  profitMargin: number;   // 👈 NEW
+  profitMargin: number;
+  costMargin?: number;      // 👈 NEW
   stock: number;
 }
 
@@ -54,7 +55,8 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
     image: "",
     description: "",
     costPrice: "",
-    profitMargin: "",      // 👈 NEW
+    profitMargin: "",
+    costMargin: "",      // 👈 NEW
     stock: "",
   });
 
@@ -64,7 +66,6 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
   const [genericSuggestions, setGenericSuggestions] = useState<string[]>([]);
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([]);
 
-  // 👇 computed sell price
   const computedSellPrice = (): string => {
     const cost = parseFloat(form.costPrice);
     const margin = parseFloat(form.profitMargin);
@@ -83,7 +84,8 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
         image: product.image,
         description: product.description,
         costPrice: product.costPrice.toString(),
-        profitMargin: product.profitMargin.toString(),   // 👈 populate margin
+        profitMargin: product.profitMargin.toString(),
+        costMargin: product.costMargin != null ? product.costMargin.toString() : "",   // 👈
         stock: product.stock.toString(),
       });
     }
@@ -151,7 +153,7 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
       const res = await fetch(`/api/admin/products/${product!.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),   // includes profitMargin, no sellPrice
+        body: JSON.stringify(form),   // includes costMargin
       });
 
       if (!res.ok) throw new Error("Failed to update");
@@ -218,7 +220,6 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
             <label className="block text-sm font-medium text-gray-700 mb-1">MRP *</label>
             <input
               type="number"
-
               name="mrp"
               value={form.mrp}
               onChange={handleChange}
@@ -331,6 +332,20 @@ export default function EditProductModal({ isOpen, onClose, onSuccess, product }
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
               required
+            />
+          </div>
+
+          {/* Cost Margin (new) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cost Margin (%)</label>
+            <input
+              type="number"
+              min="0"
+              name="costMargin"
+              value={form.costMargin}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#0F9D8F] focus:border-[#0F9D8F] outline-none text-black"
+              placeholder="Optional, defaults to profit margin if empty"
             />
           </div>
 

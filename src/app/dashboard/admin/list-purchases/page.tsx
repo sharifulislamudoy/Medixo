@@ -1,5 +1,3 @@
-// app/dashboard/admin/list-purchases/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,6 +12,7 @@ interface PurchaseItem {
   quantity: number;
   costPrice: number;
   profitMargin: number;
+  costMargin?: number;          // 👈 NEW
   sellPrice: number;
   totalCost: number;
   product: { id: string; name: string; sku: string; image?: string };
@@ -191,6 +190,7 @@ export default function ListPurchasesPage() {
                         <th className="px-2 py-1 text-gray-800 text-right">Qty</th>
                         <th className="px-2 py-1 text-gray-800 text-right">Cost (৳)</th>
                         <th className="px-2 py-1 text-gray-800 text-right">Margin %</th>
+                        <th className="px-2 py-1 text-gray-800 text-right">Cost Margin %</th>   {/* 👈 NEW */}
                         <th className="px-2 py-1 text-gray-800 text-right">Sell (৳)</th>
                         <th className="px-2 py-1 text-gray-800 text-right">Total (৳)</th>
                       </tr>
@@ -202,6 +202,7 @@ export default function ListPurchasesPage() {
                           <td className="px-2 py-1 text-gray-500 text-right">{item.quantity}</td>
                           <td className="px-2 py-1 text-gray-500 text-right">{item.costPrice.toFixed(2)}</td>
                           <td className="px-2 py-1 text-gray-500 text-right">{item.profitMargin}%</td>
+                          <td className="px-2 py-1 text-gray-500 text-right">{item.costMargin?.toFixed(2) ?? "-"}</td>  {/* 👈 NEW */}
                           <td className="px-2 py-1 text-gray-500 text-right">{item.sellPrice.toFixed(2)}</td>
                           <td className="px-2 py-1 text-gray-500 text-right">{item.totalCost.toFixed(2)}</td>
                         </tr>
@@ -209,7 +210,7 @@ export default function ListPurchasesPage() {
                     </tbody>
                     <tfoot>
                       <tr className="font-bold">
-                        <td colSpan={5} className="px-2 py-2 text-right">Grand Total:</td>
+                        <td colSpan={6} className="px-2 py-2 text-right">Grand Total:</td>
                         <td className="px-2 py-2 text-right">৳{viewTarget.totalAmount.toFixed(2)}</td>
                       </tr>
                     </tfoot>
@@ -220,7 +221,7 @@ export default function ListPurchasesPage() {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setViewTarget(null)}
-                className="px-4 py-2 bg-gray-500 rounded-lg hover:bg-gray-800"
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
               >
                 Close
               </button>

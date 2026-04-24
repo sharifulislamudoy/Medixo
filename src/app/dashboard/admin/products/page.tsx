@@ -22,7 +22,8 @@ interface Product {
   description: string;
   sellPrice: number;
   costPrice: number;
-  profitMargin: number;   // 👈 NEW
+  profitMargin: number;
+  costMargin?: number;      // 👈 NEW
   stock: number;
   status: boolean;
   availability: boolean;
@@ -200,7 +201,7 @@ export default function AdminProductsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full min-w-[1050px]">
+        <table className="w-full min-w-[1200px]">
           <thead className="bg-gray-100 border-b">
             <tr>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Image</th>
@@ -211,6 +212,7 @@ export default function AdminProductsPage() {
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Cost</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Sell</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Margin %</th>
+              <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Cost Margin %</th> {/* 👈 NEW */}
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Stock</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">Status</th>
               <th className="px-2 py-2 text-left text-sm font-medium text-gray-500 uppercase">In Stock</th>
@@ -247,6 +249,7 @@ export default function AdminProductsPage() {
                   <td className="px-2 py-2 text-sm text-gray-600">৳{product.costPrice}</td>
                   <td className="px-2 py-2 text-sm text-gray-600">৳{product.sellPrice}</td>
                   <td className="px-2 py-2 text-sm text-gray-600">{product.profitMargin}%</td>
+                  <td className="px-2 py-2 text-sm text-gray-600">{product.costMargin != null ? `${product.costMargin}%` : '-'}</td> {/* 👈 NEW */}
                   <td className="px-2 py-2 text-sm text-gray-600">{product.stock}</td>
                   {/* Status Toggle */}
                   <td className="px-2 py-2">

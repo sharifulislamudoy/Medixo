@@ -73,20 +73,18 @@ model User {
   procurementAssignments ProcurementAssignment[]
 }
 
-// prisma/schema.prisma
-
 model Advertisement {
-  id           String   @id @default(cuid())
-  title        String
-  slug         String   @unique 
-  imageUrl     String   
-  detailImage  String?  
-  description  String?  @db.Text 
-  category     String   
-  hyperlink    String?  
-  isVisible    Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  imageUrl    String
+  detailImage String?
+  description String?  @db.Text
+  category    String
+  hyperlink   String?
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model PromotionModal {
@@ -138,6 +136,7 @@ model Product {
   costPrice         Float
   nextPurchasePrice Float?
   profitMargin      Float
+  costMargin        Float? // 👈 NEW: margin used for next‑purchase deduction
   status            Boolean           @default(true)
   availability      Boolean           @default(true)
   createdAt         DateTime          @default(now())
@@ -170,7 +169,7 @@ model Order {
   paymentStatus    PaymentStatus @default(DUE)
   status           OrderStatus   @default(PENDING)
   totalAmount      Float
-  originalTotal    Float? // sum of items before discount (null if never processed by cutoff)
+  originalTotal    Float?
   discountAmount   Float         @default(0)
   userId           String
   user             User          @relation(fields: [userId], references: [id])
@@ -264,6 +263,7 @@ model PurchaseItem {
   quantity     Int
   costPrice    Float
   profitMargin Float
+  costMargin   Float? // 👈 NEW: cost margin used for next‑purchase price
   sellPrice    Float
   totalCost    Float
   mrp          Float?
@@ -271,16 +271,12 @@ model PurchaseItem {
   updatedAt    DateTime @updatedAt
 }
 
-// prisma/schema.prisma
-
-// ... keep existing models (User, Product, Order, etc.)
-
 model Procurement {
   id        String            @id @default(cuid())
   prNumber  String            @unique
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
-  status    Boolean           @default(true) // active/inactive
+  status    Boolean           @default(true)
   items     ProcurementItem[]
   notes     String?           @db.Text
 }
@@ -291,11 +287,11 @@ model ProcurementItem {
   procurement      Procurement @relation(fields: [procurementId], references: [id], onDelete: Cascade)
   productId        String
   product          Product     @relation(fields: [productId], references: [id])
-  orderQuantity    Int // aggregated quantity from selected orders
-  mrp              Float? // override MRP
-  costPrice        Float? // override cost price
-  sellPrice        Float? // override sell price
-  requiredQuantity Int // editable required quantity
+  orderQuantity    Int
+  mrp              Float?
+  costPrice        Float?
+  sellPrice        Float?
+  requiredQuantity Int
   bidding          Boolean     @default(false)
 
   createdAt   DateTime                @default(now())
@@ -322,6 +318,6 @@ model SiteSettings {
   dailyCutoffHour     Int       @default(11)
   dailyCutoffMinute   Int       @default(0)
   minFirstOrderAmount Float     @default(0)
-  orderOffStart       DateTime? // start of "orders off" period
-  orderOffEnd         DateTime? // end of "orders off" period
+  orderOffStart       DateTime?
+  orderOffEnd         DateTime?
 }
