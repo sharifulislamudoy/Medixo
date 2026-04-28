@@ -19,13 +19,31 @@ interface Ad {
 
 export default function HeroSection() {
   const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/advertisement/visible")
       .then((res) => res.json())
-      .then((data) => setAds(data));
+      .then((data) => {
+        setAds(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        // Even if the fetch fails, stop the loading skeleton
+        setLoading(false);
+      });
   }, []);
 
+  // Show a skeleton placeholder while data is loading
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="w-full h-[200px] md:h-[300px] lg:h-[450px] 2xl:h-[700px] bg-gray-200 animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  // If no ads are available after loading, render nothing
   if (ads.length === 0) return null;
 
   return (
