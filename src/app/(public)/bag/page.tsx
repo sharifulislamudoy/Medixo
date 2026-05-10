@@ -31,11 +31,11 @@ export default function BagPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Bag ({totalItems} items)</h1>
 
-      {/* Place Order Button (always on top) */}
-      <div className="flex justify-end mb-6">
+      {/* Place Order Button (desktop only) */}
+      <div className="hidden md:flex justify-end mb-6">
         <button
           onClick={handlePlaceOrder}
           className="px-8 py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition"
@@ -123,6 +123,16 @@ export default function BagPage() {
             <span className="font-bold text-[#0F9D8F]">৳{totalPrice.toFixed(2)}</span>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Place Order button (mobile only, above bottom nav) */}
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40 md:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <button
+          onClick={handlePlaceOrder}
+          className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition"
+        >
+          Place Order
+        </button>
       </div>
     </div>
   );

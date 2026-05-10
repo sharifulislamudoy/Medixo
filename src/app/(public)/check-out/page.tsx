@@ -131,10 +131,10 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8 mb-20">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Checkout</h1>
 
-      {/* Mobile Order Summary */}
+      {/* Mobile Order Summary – without the Place Order button */}
       <div className="block md:hidden mb-6">
         <div className="bg-white rounded-xl shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Order Summary</h2>
@@ -153,17 +153,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className="mt-6 mb-6">
+          <div className="mt-6">
             <p className="text-sm text-gray-500">Estimated delivery date:</p>
             <p className="text-lg font-semibold text-[#0F9D8F]">{deliveryDate}</p>
           </div>
-          <button
-            onClick={handlePlaceOrder}
-            disabled={isPlacingOrder || showOffModal}
-            className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
-          >
-            {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
-          </button>
+          {/* Place Order button removed from here – now fixed at the bottom */}
         </div>
       </div>
 
@@ -231,6 +225,19 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Place Order button (mobile only, right above bottom nav) */}
+      {!showOffModal && (
+        <div className="fixed bottom-16 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40 md:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={handlePlaceOrder}
+            disabled={isPlacingOrder || showOffModal}
+            className="w-full py-3 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
+          >
+            {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
+          </button>
+        </div>
+      )}
 
       {/* Orders Off Modal */}
       <AnimatePresence>

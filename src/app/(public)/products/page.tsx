@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LayoutGrid, Table, ShoppingCart, Minus, Plus, Check } from "lucide-react";
+import { LayoutGrid, Table, ShoppingCart, Minus, Plus, Check, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useFavourites } from "@/contexts/FavouritesContext";
 import ImageModal from "@/components/ui/ImageModal";
@@ -93,7 +93,6 @@ export default function ProductsPage() {
 
   const handleAddToCartNavigation = (product: Product, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to product details page only (no auto-add)
     router.push(`/products/${product.slug}`);
   };
 
@@ -118,7 +117,7 @@ export default function ProductsPage() {
     }),
   };
 
-  // Skeleton components (unchanged)
+  // Skeleton components
   const SkeletonCard = () => (
     <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
       <div className="h-48 w-full bg-gray-200" />
@@ -199,8 +198,8 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Display */}
-        {viewMode === "card" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+        {viewMode === "card" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
             ) : (
@@ -334,7 +333,9 @@ export default function ProductsPage() {
               <div className="col-span-full text-center py-12 text-gray-500">No products found.</div>
             )}
           </div>
-        ) : (
+        )}
+
+        {viewMode === "table" && (
           <>
             {/* Desktop Table */}
             <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
@@ -360,38 +361,46 @@ export default function ProductsPage() {
                         const isAdding = addingProductId === product.id;
 
                         return (
-                          <motion.div
+                          <motion.tr
                             key={product.id}
                             custom={i}
                             variants={rowVariants}
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, scale: 0.9 }}
-                            layout
-                            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer"
+                            className="hover:bg-gray-50 cursor-pointer"
                             onClick={() => router.push(`/products/${product.slug}`)}
                           >
-                            <div className="flex md:flex-col">
+                            {/* Image */}
+                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                               <div
-                                className="relative h-40 w-1/3 md:w-full"
+                                className="relative w-12 h-12 rounded cursor-zoom-in"
                                 onClick={(e) => handleImageClick(e, product.image)}
                               >
-                                <Image src={product.image} alt={product.name} fill className="object-cover" />
+                                <Image
+                                  src={product.image}
+                                  alt={product.name}
+                                  fill
+                                  className="object-cover rounded"
+                                />
                                 {discount > 0 && (
-                                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                    {discount}% OFF
-                                  </div>
+                                  <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] px-1 rounded-full">
+                                    {discount}%
+                                  </span>
                                 )}
+                              </div>
+                            </td>
+                            {/* Name */}
+                            <td className="px-6 py-4 text-sm font-medium text-gray-800">
+                              <div className="flex items-center gap-2">
+                                <span className="line-clamp-1">{product.name}</span>
+                                {/* favourite icon */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (isFavourite(product.id)) {
-                                      removeFavourite(product.id);
-                                    } else {
-                                      addFavourite(product);
-                                    }
+                                    isFavourite(product.id) ? removeFavourite(product.id) : addFavourite(product);
                                   }}
-                                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:scale-110 transition z-10"
+                                  className="ml-auto"
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -399,7 +408,7 @@ export default function ProductsPage() {
                                     viewBox="0 0 24 24"
                                     strokeWidth={1.5}
                                     stroke="currentColor"
-                                    className={`w-5 h-5 ${isFavourite(product.id) ? 'text-red-500' : 'text-gray-600'}`}
+                                    className={`w-5 h-5 ${isFavourite(product.id) ? 'text-red-500' : 'text-gray-400'}`}
                                   >
                                     <path
                                       strokeLinecap="round"
@@ -409,73 +418,71 @@ export default function ProductsPage() {
                                   </svg>
                                 </button>
                               </div>
-                              <div className="p-4">
-                                <h3 className="font-semibold text-lg text-gray-800 line-clamp-1">
-                                  {product.name}
-                                </h3>
-                                {product.generic?.name && (
-                                  <p className="text-sm font-medium text-[#0F9D8F] mt-1 line-clamp-1">
-                                    {product.generic.name}
-                                  </p>
+                            </td>
+                            {/* Generic */}
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {product.generic?.name || "—"}
+                            </td>
+                            {/* Brand */}
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {product.brand?.name || "—"}
+                            </td>
+                            {/* Price */}
+                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
+                                {product.mrp > product.sellPrice && (
+                                  <span className="text-xs text-gray-400 line-through">৳{product.mrp}</span>
                                 )}
-                                {product.brand?.name && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{product.brand.name}</p>
-                                )}
-                                <span className={`text-sm ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
-                                  {product.availability ? 'In Stock' : 'Out of Stock'}
-                                </span>
-                                <div className="flex items-center justify-between mt-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xl font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
-                                    {product.mrp > product.sellPrice && (
-                                      <span className="text-sm text-gray-400 line-through">৳{product.mrp}</span>
-                                    )}
-                                  </div>
-                                </div>
                               </div>
-                            </div>
-                            <div className="p-1 md:p-4 pb-2" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex gap-2">
-                                {isAdding ? (
-                                  <div className="flex-1 flex items-center justify-between gap-1 bg-gray-100 rounded-lg">
-                                    <button
-                                      onClick={() => setTempQuantity(prev => Math.max(prev - 1, 1))}
-                                      className="p-2 text-gray-600 hover:text-[#0F9D8F]"
-                                      disabled={tempQuantity <= 1}
-                                    >
-                                      <Minus size={18} />
-                                    </button>
-                                    <span className="w-8 text-center text-black font-medium">{tempQuantity}</span>
-                                    <button
-                                      onClick={() => setTempQuantity(prev => prev + 1)}
-                                      className="p-2 text-gray-600 hover:text-[#0F9D8F]"
-                                    >
-                                      <Plus size={18} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleConfirmAdd(product)}
-                                      className="p-2 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white rounded-r-lg hover:opacity-90 w-10"
-                                    >
-                                      <Check size={18} />
-                                    </button>
-                                    <button
-                                      onClick={handleCancelAdd}
-                                      className="p-2 text-gray-500 hover:text-gray-700"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ) : (
+                            </td>
+                            {/* Availability */}
+                            <td className="px-6 py-4 text-sm">
+                              <span className={product.availability ? 'text-green-600' : 'text-red-500'}>
+                                {product.availability ? 'In Stock' : 'Out of Stock'}
+                              </span>
+                            </td>
+                            {/* Actions */}
+                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                              {isAdding ? (
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg w-fit">
                                   <button
-                                    onClick={(e) => handleAddToCartNavigation(product, e)}
-                                    className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white py-2 rounded-lg hover:opacity-90"
+                                    onClick={() => setTempQuantity(prev => Math.max(prev - 1, 1))}
+                                    className="p-1 text-gray-600 hover:text-[#0F9D8F]"
+                                    disabled={tempQuantity <= 1}
                                   >
-                                    <ShoppingCart size={18} /> Add to Cart
+                                    <Minus size={16} />
                                   </button>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
+                                  <span className="w-8 text-center text-black font-medium">{tempQuantity}</span>
+                                  <button
+                                    onClick={() => setTempQuantity(prev => prev + 1)}
+                                    className="p-1 text-gray-600 hover:text-[#0F9D8F]"
+                                  >
+                                    <Plus size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleConfirmAdd(product)}
+                                    className="p-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white rounded-r-lg hover:opacity-90"
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelAdd}
+                                    className="p-1 text-gray-500 hover:text-gray-700"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => handleAddToCartNavigation(product, e)}
+                                  className="flex items-center gap-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-3 py-1.5 rounded-lg hover:opacity-90 text-sm"
+                                >
+                                  <ShoppingCart size={16} /> Add
+                                </button>
+                              )}
+                            </td>
+                          </motion.tr>
                         );
                       })}
                     </AnimatePresence>
@@ -507,38 +514,61 @@ export default function ProductsPage() {
                         const isAdding = addingProductId === product.id;
 
                         return (
-                          <motion.div
+                          <motion.tr
                             key={product.id}
                             custom={i}
                             variants={rowVariants}
                             initial="hidden"
                             animate="visible"
                             exit={{ opacity: 0, scale: 0.9 }}
-                            layout
-                            className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer"
+                            className="hover:bg-gray-50 cursor-pointer"
                             onClick={() => router.push(`/products/${product.slug}`)}
                           >
-                            <div className="flex md:flex-col">
+                            {/* Image */}
+                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                               <div
-                                className="relative h-40 w-1/3 md:w-full"
+                                className="relative w-12 h-12 rounded cursor-zoom-in"
                                 onClick={(e) => handleImageClick(e, product.image)}
                               >
-                                <Image src={product.image} alt={product.name} fill className="object-cover" />
+                                <Image
+                                  src={product.image}
+                                  alt={product.name}
+                                  fill
+                                  className="object-cover rounded"
+                                />
                                 {discount > 0 && (
-                                  <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                    {discount}% OFF
-                                  </div>
+                                  <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] px-1 rounded-full">
+                                    {discount}%
+                                  </span>
                                 )}
+                              </div>
+                            </td>
+                            {/* Product Info */}
+                            <td className="px-4 py-4">
+                              <div className="space-y-1">
+                                <div className="font-medium text-gray-800 text-sm line-clamp-1">{product.name}</div>
+                                {product.generic?.name && (
+                                  <div className="text-xs text-[#0F9D8F]">{product.generic.name}</div>
+                                )}
+                                {product.brand?.name && (
+                                  <div className="text-xs text-gray-500">{product.brand.name}</div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
+                                  {product.mrp > product.sellPrice && (
+                                    <span className="text-xs text-gray-400 line-through">৳{product.mrp}</span>
+                                  )}
+                                </div>
+                                <span className={`text-xs ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
+                                  {product.availability ? 'In Stock' : 'Out of Stock'}
+                                </span>
+                                {/* favourite icon */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (isFavourite(product.id)) {
-                                      removeFavourite(product.id);
-                                    } else {
-                                      addFavourite(product);
-                                    }
+                                    isFavourite(product.id) ? removeFavourite(product.id) : addFavourite(product);
                                   }}
-                                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:scale-110 transition z-10"
+                                  className="block mt-1"
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -546,7 +576,7 @@ export default function ProductsPage() {
                                     viewBox="0 0 24 24"
                                     strokeWidth={1.5}
                                     stroke="currentColor"
-                                    className={`w-5 h-5 ${isFavourite(product.id) ? 'text-red-500' : 'text-gray-600'}`}
+                                    className={`w-4 h-4 ${isFavourite(product.id) ? 'text-red-500' : 'text-gray-400'}`}
                                   >
                                     <path
                                       strokeLinecap="round"
@@ -556,73 +586,48 @@ export default function ProductsPage() {
                                   </svg>
                                 </button>
                               </div>
-                              <div className="p-4">
-                                <h3 className="font-semibold text-lg text-gray-800 line-clamp-1">
-                                  {product.name}
-                                </h3>
-                                {product.generic?.name && (
-                                  <p className="text-sm font-medium text-[#0F9D8F] mt-1 line-clamp-1">
-                                    {product.generic.name}
-                                  </p>
-                                )}
-                                {product.brand?.name && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{product.brand.name}</p>
-                                )}
-                                <span className={`text-sm ${product.availability ? 'text-green-600' : 'text-red-500'}`}>
-                                  {product.availability ? 'In Stock' : 'Out of Stock'}
-                                </span>
-                                <div className="flex items-center justify-between mt-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xl font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
-                                    {product.mrp > product.sellPrice && (
-                                      <span className="text-sm text-gray-400 line-through">৳{product.mrp}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="p-1 md:p-4 pb-2" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex gap-2">
-                                {isAdding ? (
-                                  <div className="flex-1 flex items-center justify-between gap-1 bg-gray-100 rounded-lg">
-                                    <button
-                                      onClick={() => setTempQuantity(prev => Math.max(prev - 1, 1))}
-                                      className="p-2 text-gray-600 hover:text-[#0F9D8F]"
-                                      disabled={tempQuantity <= 1}
-                                    >
-                                      <Minus size={18} />
-                                    </button>
-                                    <span className="w-8 text-center text-black font-medium">{tempQuantity}</span>
-                                    <button
-                                      onClick={() => setTempQuantity(prev => prev + 1)}
-                                      className="p-2 text-gray-600 hover:text-[#0F9D8F]"
-                                    >
-                                      <Plus size={18} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleConfirmAdd(product)}
-                                      className="p-2 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white rounded-r-lg hover:opacity-90 w-10"
-                                    >
-                                      <Check size={18} />
-                                    </button>
-                                    <button
-                                      onClick={handleCancelAdd}
-                                      className="p-2 text-gray-500 hover:text-gray-700"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ) : (
+                            </td>
+                            {/* Actions */}
+                            <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                              {isAdding ? (
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg w-fit">
                                   <button
-                                    onClick={(e) => handleAddToCartNavigation(product, e)}
-                                    className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white py-2 rounded-lg hover:opacity-90"
+                                    onClick={() => setTempQuantity(prev => Math.max(prev - 1, 1))}
+                                    className="p-1 text-gray-600 hover:text-[#0F9D8F]"
+                                    disabled={tempQuantity <= 1}
                                   >
-                                    <ShoppingCart size={18} /> Add to Cart
+                                    <Minus size={16} />
                                   </button>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
+                                  <span className="w-8 text-center text-black font-medium">{tempQuantity}</span>
+                                  <button
+                                    onClick={() => setTempQuantity(prev => prev + 1)}
+                                    className="p-1 text-gray-600 hover:text-[#0F9D8F]"
+                                  >
+                                    <Plus size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleConfirmAdd(product)}
+                                    className="p-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white rounded-r-lg hover:opacity-90"
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelAdd}
+                                    className="p-1 text-gray-500 hover:text-gray-700"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => handleAddToCartNavigation(product, e)}
+                                  className="flex items-center gap-1 bg-gradient-to-r from-[#156A98] to-[#0F9D8F] text-white px-3 py-1.5 rounded-lg hover:opacity-90 text-sm"
+                                >
+                                  <ShoppingCart size={16} /> Add
+                                </button>
+                              )}
+                            </td>
+                          </motion.tr>
                         );
                       })}
                     </AnimatePresence>
