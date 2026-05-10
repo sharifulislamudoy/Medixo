@@ -52,9 +52,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
           <div className="p-3">
             <h3 className="font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {product.generic?.name} | {product.brand?.name}
-            </p>
+            {product.generic?.name && (
+              <p className="text-sm font-medium text-[#0F9D8F] mt-1 line-clamp-1">
+                {product.generic.name}
+              </p>
+            )}
+            {product.brand?.name && (
+              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{product.brand.name}</p>
+            )}
             <div className="flex items-center gap-2 mt-2">
               <span className="text-lg font-bold text-[#0F9D8F]">৳{product.sellPrice}</span>
               {product.mrp > product.sellPrice && (

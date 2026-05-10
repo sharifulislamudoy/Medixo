@@ -13,39 +13,58 @@ interface Product {
 
 interface AddToCartButtonProps {
   product: Product;
-  sticky?: boolean; // when true, renders a full-width button with quantity selector inside
+  sticky?: boolean;
 }
 
 export default function AddToCartButton({ product, sticky = false }: AddToCartButtonProps) {
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number>(1);
   const { addItem } = useCart();
 
-  const increment = () => setQuantity(prev => prev + 1);
-  const decrement = () => setQuantity(prev => Math.max(prev - 1, 1));
+  const handleQuantityChange = (value: number) => {
+    const safe = Math.max(1, Math.floor(value));
+    setQuantity(safe);
+  };
+
+  const increment = () => setQuantity((prev) => prev + 1);
+  const decrement = () => setQuantity((prev) => Math.max(prev - 1, 1));
 
   const handleAdd = () => {
     addItem(product, quantity);
     setQuantity(1);
   };
 
+  const quantityInput = (
+    <div className="flex items-center">
+      <button
+        type="button"
+        onClick={decrement}
+        disabled={quantity <= 1}
+        className="px-2 py-2 text-gray-600 hover:text-[#0F9D8F] disabled:opacity-50"
+      >
+        <Minus size={20} />
+      </button>
+      <input
+        type="number"
+        min="1"
+        value={quantity}
+        onChange={(e) => handleQuantityChange(Number(e.target.value))}
+        className="w-14 text-center border-0 bg-transparent text-black font-medium text-lg [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <button
+        type="button"
+        onClick={increment}
+        className="px-2 py-2 text-gray-600 hover:text-[#0F9D8F]"
+      >
+        <Plus size={20} />
+      </button>
+    </div>
+  );
+
   if (sticky) {
     return (
       <div className="flex items-center gap-3 w-full">
         <div className="flex items-center border border-gray-300 rounded-lg bg-white">
-          <button
-            onClick={decrement}
-            disabled={quantity <= 1}
-            className="px-4 py-3 text-gray-600 hover:text-[#0F9D8F] disabled:opacity-50"
-          >
-            <Minus size={20} />
-          </button>
-          <span className="w-12 text-center text-black font-medium">{quantity}</span>
-          <button
-            onClick={increment}
-            className="px-4 py-3 text-gray-600 hover:text-[#0F9D8F]"
-          >
-            <Plus size={20} />
-          </button>
+          {quantityInput}
         </div>
         <button
           onClick={handleAdd}
@@ -61,20 +80,7 @@ export default function AddToCartButton({ product, sticky = false }: AddToCartBu
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center border border-gray-300 rounded-lg">
-        <button
-          onClick={decrement}
-          disabled={quantity <= 1}
-          className="px-3 py-2 text-gray-600 hover:text-[#0F9D8F] disabled:opacity-50"
-        >
-          <Minus size={20} />
-        </button>
-        <span className="w-12 text-center text-black font-medium">{quantity}</span>
-        <button
-          onClick={increment}
-          className="px-3 py-2 text-gray-600 hover:text-[#0F9D8F]"
-        >
-          <Plus size={20} />
-        </button>
+        {quantityInput}
       </div>
       <button
         onClick={handleAdd}
