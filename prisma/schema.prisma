@@ -203,6 +203,9 @@ model Order {
   updatedAt        DateTime      @updatedAt
   deliveryCodeId   String?
   deliveryCode     DeliveryCode? @relation(fields: [deliveryCodeId], references: [id])
+  reviewShown      Boolean  @default(false)   
+  reviewRating     Int?                      
+  reviewComment    String?   @db.Text     
 }
 
 model OrderItem {

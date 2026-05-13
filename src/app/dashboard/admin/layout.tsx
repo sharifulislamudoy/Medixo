@@ -25,20 +25,22 @@ export default function AdminLayout({
     { name: "Shipment", href: "/dashboard/admin/delivery-shipment" },
     { name: "Delivery Boys", href: "/dashboard/admin/delivery-boy" },
     { name: "Purchases", href: "/dashboard/admin/list-purchases" },
-    
+    { name: "Home Sections", href: "/dashboard/admin/home-sections" },
+    { name: "Customer Reviews", href: "/dashboard/admin/reviews" },
+    { name: "Activities", href: "/dashboard/admin/user-activities" },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top gradient bar */}
       <div className="h-1 w-full bg-gradient-to-r from-[#156A98] via-[#0F9D8F] to-[#156A98]" />
 
-      {/* Responsive container: column on mobile, row on md+ */}
-      <div className="flex flex-col md:flex-row">
-        {/* Sidebar - full width on mobile, 1/4 on desktop */}
-        <aside className="w-full md:w-1/6 bg-white shadow-lg md:min-h-screen p-4 md:p-6">
+      {/* Responsive container */}
+      <div className="flex flex-col md:flex-row flex-1">
+        {/* Sidebar - sticky on desktop, full height, scrollable if content overflows */}
+        <aside className="w-full md:w-1/6 bg-white shadow-lg p-4 md:p-6 md:sticky md:top-0 md:h-screen md:overflow-y-auto">
           <div className="mb-6 md:mb-8">
-            <Link href={'/'}>
+            <Link href="/">
               <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-[#156A98] to-[#0F9D8F] bg-clip-text text-transparent">
                 Admin
               </h2>
@@ -48,7 +50,7 @@ export default function AdminLayout({
             </p>
           </div>
 
-          {/* Navigation - horizontal scroll on mobile if needed, stacked on desktop */}
+          {/* Navigation */}
           <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:space-y-1">
             {navItems.map((item) => {
               const isActive =
@@ -59,10 +61,11 @@ export default function AdminLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
                       ? "bg-gradient-to-r from-[#156A98]/10 to-[#0F9D8F]/10 text-[#156A98] font-medium border-l-4 md:border-l-4 border-l-0 md:border-l-4 border-b-2 md:border-b-0 border-[#0F9D8F]"
                       : "text-gray-600 hover:bg-gray-100 hover:text-[#0F9D8F]"
-                    }`}
+                  }`}
                 >
                   {item.name}
                 </Link>
@@ -71,7 +74,7 @@ export default function AdminLayout({
           </nav>
         </aside>
 
-        {/* Main content - full width on mobile, 3/4 on desktop */}
+        {/* Main content - scrolls independently */}
         <main className="w-full md:w-5/6 p-4 md:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
