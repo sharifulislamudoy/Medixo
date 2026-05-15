@@ -217,6 +217,7 @@ model OrderItem {
   quantity         Int
   price            Float
   returnedQuantity Int      @default(0)
+  missingQuantity  Int      @default(0)
   createdAt        DateTime @default(now())
 }
 

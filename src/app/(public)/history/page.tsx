@@ -20,6 +20,8 @@ interface OrderItem {
   productId: string;
   quantity: number;
   price: number;
+  returnedQuantity: number;
+  missingQuantity: number; // added field
   product: {
     name: string;
     image: string;
@@ -56,7 +58,9 @@ export default function HistoryPage() {
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editItems, setEditItems] = useState<{ productId: string; name: string; image: string; quantity: number; price: number }[]>([]);
+  const [editItems, setEditItems] = useState<
+    { productId: string; name: string; image: string; quantity: number; price: number }[]
+  >([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
@@ -112,52 +116,54 @@ export default function HistoryPage() {
   const handleCancelOrder = async () => {
     if (!orderDetails || orderDetails.status !== 'PENDING') return;
 
-    // Show confirmation toast with action
-    toast((t) => (
-      <span>
-        Are you sure you want to cancel this order?
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              setLoadingDetails(true); // simple loading state inside modal
-              try {
-                const res = await fetch(`/api/orders/${orderDetails.id}`, {
-                  method: 'PATCH',
-                });
-                if (res.ok) {
-                  toast.success('Order cancelled successfully');
-                  closeModal();
-                  fetchOrders(); // refresh list
-                } else {
-                  const data = await res.json();
-                  toast.error(data.error || 'Failed to cancel order');
+    toast(
+      (t) => (
+        <span>
+          Are you sure you want to cancel this order?
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                setLoadingDetails(true);
+                try {
+                  const res = await fetch(`/api/orders/${orderDetails.id}`, {
+                    method: 'PATCH',
+                  });
+                  if (res.ok) {
+                    toast.success('Order cancelled successfully');
+                    closeModal();
+                    fetchOrders();
+                  } else {
+                    const data = await res.json();
+                    toast.error(data.error || 'Failed to cancel order');
+                  }
+                } catch (error) {
+                  toast.error('An error occurred');
+                } finally {
+                  setLoadingDetails(false);
                 }
-              } catch (error) {
-                toast.error('An error occurred');
-              } finally {
-                setLoadingDetails(false);
-              }
-            }}
-            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Yes, cancel
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            No
-          </button>
-        </div>
-      </span>
-    ), { duration: 10000 }); // keep until action
+              }}
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Yes, cancel
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              No
+            </button>
+          </div>
+        </span>
+      ),
+      { duration: 10000 }
+    );
   };
 
   // Open edit modal
   const handleEditClick = () => {
     if (!orderDetails) return;
-    const items = orderDetails.items.map(item => ({
+    const items = orderDetails.items.map((item) => ({
       productId: item.productId,
       name: item.product.name,
       image: item.product.image,
@@ -171,8 +177,8 @@ export default function HistoryPage() {
   // Adjust quantity in edit modal
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 0) return;
-    setEditItems(prev =>
-      prev.map(item =>
+    setEditItems((prev) =>
+      prev.map((item) =>
         item.productId === productId ? { ...item, quantity: newQuantity } : item
       )
     );
@@ -182,8 +188,8 @@ export default function HistoryPage() {
   const handleSaveEdit = async () => {
     if (!orderDetails) return;
     const updatedItems = editItems
-      .filter(item => item.quantity > 0)
-      .map(item => ({
+      .filter((item) => item.quantity > 0)
+      .map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
       }));
@@ -204,7 +210,7 @@ export default function HistoryPage() {
         toast.success('Order updated successfully');
         setEditModalOpen(false);
         closeModal();
-        fetchOrders(); // refresh list
+        fetchOrders();
       } else {
         const data = await res.json();
         toast.error(data.error || 'Failed to update order');
@@ -225,7 +231,7 @@ export default function HistoryPage() {
         <p className="text-gray-600">No orders yet.</p>
       ) : (
         <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {orders.map(order => (
+          {orders.map((order) => (
             <div
               key={order.id}
               onClick={() => handleOrderClick(order.id)}
@@ -318,19 +324,62 @@ export default function HistoryPage() {
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-gray-800">{item.product.name}</p>
-                          <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                          <p className="text-sm text-gray-500">
+                            Qty: {item.quantity}
+                            {item.returnedQuantity > 0 && (
+                              <span className="text-red-600"> (Returned: {item.returnedQuantity})</span>
+                            )}
+                            {item.missingQuantity > 0 && (
+                              <span className="text-purple-600"> (Missing: {item.missingQuantity})</span>
+                            )}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-[#0F9D8F]">৳{(item.price * item.quantity).toFixed(2)}</p>
+                          <p className="font-semibold text-[#0F9D8F]">
+                            ৳{(item.price * item.quantity).toFixed(2)}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Total */}
+                  {/* Totals */}
+                  {orderDetails.items.some(item => item.returnedQuantity > 0) && (
+                    <div className="border-t mt-4 pt-4 flex justify-between text-red-600">
+                      <span>Returned Value:</span>
+                      <span>
+                        - ৳
+                        {orderDetails.items
+                          .reduce((sum, item) => sum + item.returnedQuantity * item.price, 0)
+                          .toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {orderDetails.items.some(item => (item.missingQuantity || 0) > 0) && (
+                    <div className="border-t mt-2 pt-2 flex justify-between text-purple-600">
+                      <span>Missing Value:</span>
+                      <span>
+                        - ৳
+                        {orderDetails.items
+                          .reduce((sum, item) => sum + (item.missingQuantity || 0) * item.price, 0)
+                          .toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                   <div className="border-t mt-4 pt-4 flex justify-between font-bold text-lg">
-                    <span className='text-black'>Total</span>
+                    <span className='text-gray-700'>Original Total</span>
                     <span className="text-[#0F9D8F]">৳{orderDetails.totalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg">
+                    <span className='text-gray-700'>Net Payable</span>
+                    <span className="text-[#0F9D8F]">
+                      ৳
+                      {(
+                        orderDetails.totalAmount -
+                        orderDetails.items.reduce((sum, item) => sum + item.returnedQuantity * item.price, 0) -
+                        orderDetails.items.reduce((sum, item) => sum + (item.missingQuantity || 0) * item.price, 0)
+                      ).toFixed(2)}
+                    </span>
                   </div>
 
                   {/* Action Buttons for PENDING orders */}

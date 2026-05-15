@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Eye, CheckCircle, RotateCcw } from "lucide-react";
+import { Eye, CheckCircle, RotateCcw, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Order {
@@ -53,7 +53,7 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
 
   return (
     <>
-      {/* Desktop Table View (hidden on small screens) */}
+      {/* Desktop Table View */}
       <div className="hidden md:block bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-100">
@@ -108,6 +108,13 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
                     >
                       <RotateCcw size={18} />
                     </button>
+                    <button
+                      onClick={() => router.push(`/orders/${order.id}/missing`)}
+                      className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                      title="Missing Items"
+                    >
+                      <AlertTriangle size={18} />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -119,7 +126,7 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
         )}
       </div>
 
-      {/* Mobile Card View (visible only on small screens) */}
+      {/* Mobile Card View */}
       <div className="block md:hidden space-y-4">
         {orders.map((order, index) => (
           <div key={order.id} className="bg-white rounded-lg shadow p-4 border border-gray-100">
@@ -130,7 +137,6 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
               </div>
               <span className="text-lg font-bold text-[#0F9D8F]">৳{order.totalAmount.toFixed(2)}</span>
             </div>
-
             <div className="mb-3">
               {order.customerShopName && (
                 <p className="font-semibold text-gray-800">{order.customerShopName}</p>
@@ -138,7 +144,6 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
               <p className="text-gray-700">{order.customerName}</p>
               <p className="text-sm text-gray-500">{order.customerPhone}</p>
             </div>
-
             <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
               <button
                 onClick={() => window.open(`/orders/${order.id}`, "_blank")}
@@ -163,6 +168,13 @@ export default function DeliveryBoyOrdersClient({ initialOrders }: Props) {
                 title="Return Items"
               >
                 <RotateCcw size={18} />
+              </button>
+              <button
+                onClick={() => router.push(`/orders/${order.id}/missing`)}
+                className="p-2 text-purple-600 bg-purple-50 rounded-full hover:bg-purple-100"
+                title="Missing Items"
+              >
+                <AlertTriangle size={18} />
               </button>
             </div>
           </div>
