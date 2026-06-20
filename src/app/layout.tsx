@@ -4,6 +4,7 @@ import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { Toaster } from "react-hot-toast";
 import CartProviderWrapper from "@/components/CartProviderWrapper";
 import InitialLoader from "@/components/InitialLoader";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://medixo-bd.vercel.app'),
@@ -102,6 +103,7 @@ export default function RootLayout({
             </InitialLoader>
           </CartProviderWrapper>
         </SessionProviderWrapper>
+        <SpeedInsights />
       </body>
     </html>
   );
